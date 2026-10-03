@@ -1,0 +1,49 @@
+{% extends "print_base.html" %}
+{% block title %}Carte du restaurant{% endblock %}
+{% block heading %}Notre carte{% if only_available %} du jour{% endif %}{% endblock %}
+{% block back_url %}{{ url_for('main.menu_list') }}{% endblock %}
+{% block toolbar %}
+  {% if only_available %}
+  <a href="{{ url_for('main.menu_print') }}"><i class="bi bi-list"></i> Tous les menus</a>
+  {% else %}
+  <a href="{{ url_for('main.menu_print', dispo=1) }}"><i class="bi bi-check2-circle"></i> Seulement les disponibles</a>
+  {% endif %}
+{% endblock %}
+{% block style %}
+  .cat { font-family: 'Fraunces', Georgia, serif; color: var(--accent); font-size: 1.25rem; margin: 1.1rem 0 .6rem;
+         display: flex; align-items: center; gap: .6rem; }
+  .cat::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .dishes { display: grid; grid-template-columns: repeat(2, 1fr); gap: .8rem 1.2rem; }
+  .dish { display: flex; gap: .75rem; align-items: center; }
+  .dish img, .dish .ph { width: 64px; height: 64px; border-radius: .6rem; object-fit: cover; flex-shrink: 0; }
+  .dish .ph { background: #f3ebe2; display: flex; align-items: center; justify-content: center; color: #b89a80; font-size: 1.4rem; }
+  .dish .name { font-weight: 700; }
+  .dish .price { font-family: 'Fraunces', Georgia, serif; color: var(--accent); font-weight: 700; white-space: nowrap; }
+  .dish .row { display: flex; justify-content: space-between; gap: .5rem; align-items: baseline; flex: 1;
+               border-bottom: 1px dotted #c9b8a8; padding-bottom: .15rem; }
+  @media (max-width: 600px) { .dishes { grid-template-columns: 1fr; } }
+{% endblock %}
+{% block content %}
+{% for cat, items in groups.items() %}
+<div class="keep">
+  <div class="cat">{{ cat }}</div>
+  <div class="dishes">
+    {% for it in items %}
+    <div class="dish keep">
+      {% if it.photo_filename %}
+      <img src="{{ url_for('static', filename='uploads/menu/' + it.photo_filename) }}" alt="">
+      {% else %}
+      <div class="ph"><i class="bi bi-cup-hot"></i></div>
+      {% endif %}
+      <div class="row">
+        <span class="name">{{ it.name }}</span>
+        <span class="price">{{ it.sale_price|ar }} Ar</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% else %}
+<p>Aucun menu à afficher.</p>
+{% endfor %}
+{% endblock %}

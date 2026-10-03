@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Recherche{% endblock %}
+{% block page_title %}Résultats de recherche{% endblock %}
+{% block page_subtitle %}{{ '« ' + q + ' »' if q else '' }}{% endblock %}
+{% block content %}
+
+{% if not q %}
+<div class="rm-empty-state"><i class="bi bi-search"></i><span>Tapez un mot dans la barre de recherche en haut (nom de menu, table, fournisseur, catégorie de dépense...).</span></div>
+
+{% elif total_count == 0 %}
+<div class="rm-empty-state"><i class="bi bi-search"></i><span>Aucun résultat pour « {{ q }} ».</span></div>
+
+{% else %}
+<p class="text-muted small mb-4">{{ total_count }} résultat(s) pour « {{ q }} »</p>
+
+{% if results.menus %}
+<div class="card rm-widget-card shadow-sm p-3 mb-3">
+  <div class="rm-widget-title mb-2"><i class="bi bi-cup-hot"></i> Menus</div>
+  <ul class="list-group list-group-flush">
+    {% for m in results.menus %}
+    <li class="list-group-item d-flex justify-content-between">
+      <a href="{{ url_for('main.menu_list') }}">{{ m.name }}</a>
+      <span class="text-muted">{{ "%.0f"|format(m.sale_price) }} Ar</span>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if results.ingredients %}
+<div class="card rm-widget-card shadow-sm p-3 mb-3">
+  <div class="rm-widget-title mb-2"><i class="bi bi-box-seam"></i> Ingrédients / Stock</div>
+  <ul class="list-group list-group-flush">
+    {% for i in results.ingredients %}
+    <li class="list-group-item d-flex justify-content-between">
+      <a href="{{ url_for('main.stock_list') }}">{{ i.name }}</a>
+      <span class="text-muted">{{ i.stock_quantity }} {{ i.unit }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if results.sales %}
+<div class="card rm-widget-card shadow-sm p-3 mb-3">
+  <div class="rm-widget-title mb-2"><i class="bi bi-receipt"></i> Ventes</div>
+  <ul class="list-group list-group-flush">
+    {% for s in results.sales %}
+    <li class="list-group-item d-flex justify-content-between">
+      <a href="{{ url_for('sales.sale_receipt', sale_id=s.id) }}">
+        {{ s.receipt_number() }} — Table {{ s.table_number or '—' }}
+        {% if s.client_name %} ({{ s.client_name }}){% endif %}
+      </a>
+      <span class="text-muted">{{ "%.0f"|format(s.total) }} Ar</span>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if results.purchases %}
+<div class="card rm-widget-card shadow-sm p-3 mb-3">
+  <div class="rm-widget-title mb-2"><i class="bi bi-cart"></i> Achats</div>
+  <ul class="list-group list-group-flush">
+    {% for p in results.purchases %}
+    <li class="list-group-item d-flex justify-content-between">
+      <a href="{{ url_for('purchases.purchase_list') }}">{{ p.ingredient.name }} — {{ p.supplier or 'Fournisseur non précisé' }}</a>
+      <span class="text-muted">{{ "%.0f"|format(p.total) }} Ar</span>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if results.expenses %}
+<div class="card rm-widget-card shadow-sm p-3 mb-3">
+  <div class="rm-widget-title mb-2"><i class="bi bi-lightning-charge"></i> Dépenses</div>
+  <ul class="list-group list-group-flush">
+    {% for e in results.expenses %}
+    <li class="list-group-item d-flex justify-content-between">
+      <a href="{{ url_for('expenses.expenses_list', period='all') }}">{{ e.category }} {% if e.description %}— {{ e.description }}{% endif %}</a>
+      <span class="text-muted">{{ "%.0f"|format(e.amount) }} Ar</span>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if results.users %}
+<div class="card rm-widget-card shadow-sm p-3 mb-3">
+  <div class="rm-widget-title mb-2"><i class="bi bi-people"></i> Utilisateurs</div>
+  <ul class="list-group list-group-flush">
+    {% for u in results.users %}
+    <li class="list-group-item d-flex justify-content-between">
+      <a href="{{ url_for('main.users_list') }}">{{ u.username }}</a>
+      <span class="badge text-bg-secondary">{{ u.role_label() }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}

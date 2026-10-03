@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Ventes{% endblock %}
+{% block page_title %}Ventes{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 mb-0">🧾 Historique des ventes</h1>
+  <a href="{{ url_for('sales.sale_new') }}" class="btn btn-primary">
+    <i class="bi bi-plus-lg"></i> Nouvelle vente
+  </a>
+</div>
+
+<div class="table-responsive">
+<table class="table table-hover align-middle bg-body">
+  <thead>
+    <tr>
+      <th>N° ticket</th>
+      <th>Date/Heure</th>
+      <th>Table</th>
+      <th>Serveur</th>
+      <th>Paiement</th>
+      <th>Total</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for sale in sales %}
+    <tr>
+      <td>{{ sale.receipt_number() }}</td>
+      <td>{{ sale.created_at|local('%d/%m/%Y %H:%M') }}</td>
+      <td>{{ sale.table_number or '—' }}</td>
+      <td>{{ sale.server.username }}</td>
+      <td>{{ sale.payment_method }}</td>
+      <td>{{ "%.0f"|format(sale.total) }} Ar</td>
+      <td><a href="{{ url_for('sales.sale_receipt', sale_id=sale.id) }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-printer"></i> Ticket
+      </a>
+      {% if current_user.role in ['super_admin', 'admin'] %}
+      <a href="{{ url_for('sales.sale_invoice', sale_id=sale.id) }}" class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-receipt-cutoff"></i> Facture
+      </a>
+      {% endif %}
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7" class="text-muted">Aucune vente enregistrée pour le moment.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Modifier {{ u.username }}{% endblock %}
+{% block page_title %}Modifier un utilisateur{% endblock %}
+{% block content %}
+<form method="POST" class="card shadow-sm p-4" style="max-width:520px">
+  <div class="mb-3">
+    <label class="form-label">Nom d'utilisateur</label>
+    <input type="text" name="username" class="form-control form-control-lg" value="{{ u.username }}" required maxlength="80" autocomplete="off">
+    <div class="form-text">
+      C'est le nom utilisé pour se connecter et affiché sur les tickets. Exemples : Patron, Serveur Rivo, Caisse 1...
+      Les majuscules ne comptent pas à la connexion.
+    </div>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Rôle</label>
+    <select name="role" class="form-select" {{ 'disabled' if u.id == current_user.id }}>
+      {% for value, label in roles %}
+      {% if value != 'super_admin' or current_user.role == 'super_admin' %}
+      <option value="{{ value }}" {{ 'selected' if u.role == value }}>{{ label }}</option>
+      {% endif %}
+      {% endfor %}
+    </select>
+    {% if u.id == current_user.id %}
+    <input type="hidden" name="role" value="{{ u.role }}">
+    <div class="form-text">Vous ne pouvez pas changer votre propre rôle.</div>
+    {% endif %}
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Email (optionnel)</label>
+    <input type="email" name="email" class="form-control" value="{{ u.email or '' }}">
+  </div>
+  <div class="alert alert-warning small">
+    <i class="bi bi-info-circle"></i> Si vous changez le nom, prévenez la personne : elle devra se connecter avec le
+    <strong>nouveau nom</strong> (le mot de passe ne change pas).
+  </div>
+  <div>
+    <button type="submit" class="btn btn-primary">Enregistrer</button>
+    <a href="{{ url_for('main.users_list') }}" class="btn btn-link">Retour</a>
+  </div>
+</form>
+{% endblock %}

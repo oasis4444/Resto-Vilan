@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Import / Export Excel{% endblock %}
+{% block page_title %}Import / Export Excel{% endblock %}
+{% block page_subtitle %}Fichiers .xlsx (Excel, LibreOffice, Google Sheets) ou .csv{% endblock %}
+{% block content %}
+<div class="alert alert-light border small">
+  <i class="bi bi-info-circle"></i>
+  Téléchargez un <strong>modèle</strong>, remplissez-le, puis importez-le. Tout le fichier est vérifié
+  <strong>avant</strong> d'enregistrer : s'il y a une erreur, rien n'est importé et la liste des erreurs s'affiche.
+  Les colonnes sont reconnues par leur nom (l'ordre n'a pas d'importance). Un ingrédient peut être écrit
+  par son nom ou par son code (ex : <span class="rm-code">PLT</span>).
+</div>
+
+{% macro import_form(endpoint) %}
+<form method="POST" action="{{ url_for(endpoint) }}" enctype="multipart/form-data" class="mt-auto">
+  <input type="file" name="file" accept=".xlsx,.xlsm,.csv" class="form-control form-control-sm mb-2" required>
+  <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-upload"></i> Importer</button>
+</form>
+{% endmacro %}
+
+<div class="row g-3">
+  <div class="col-md-6 col-xl-4">
+    <div class="card shadow-sm h-100"><div class="card-body d-flex flex-column">
+      <h5 class="card-title"><i class="bi bi-box-seam"></i> Ingrédients / Stock</h5>
+      <p class="small text-muted">nom_ingredient, code, catégorie, unité, stock, seuil_alerte, prix_unitaire</p>
+      <a href="{{ url_for('excel.template_ingredients') }}" class="btn btn-outline-secondary btn-sm w-100 mb-2"><i class="bi bi-download"></i> Télécharger le modèle</a>
+      <a href="{{ url_for('excel.export_ingredients') }}" class="btn btn-outline-secondary btn-sm w-100 mb-3"><i class="bi bi-file-earmark-arrow-down"></i> Exporter le stock actuel</a>
+      <div class="form-text mb-2">Ré-importer un export ne crée pas de doublon. Le « stock » du fichier <strong>remplace</strong> le stock (noté dans le journal).</div>
+      {{ import_form('excel.import_ingredients') }}
+    </div></div>
+  </div>
+
+  <div class="col-md-6 col-xl-4">
+    <div class="card shadow-sm h-100"><div class="card-body d-flex flex-column">
+      <h5 class="card-title"><i class="bi bi-cup-hot"></i> Menu + Recette</h5>
+      <p class="small text-muted">nom_menu, catégorie_menu, prix_vente, ingredient, quantité_par_portion (une ligne par ingrédient)</p>
+      <a href="{{ url_for('excel.template_menu') }}" class="btn btn-outline-secondary btn-sm w-100 mb-2"><i class="bi bi-download"></i> Télécharger le modèle</a>
+      <a href="{{ url_for('excel.export_menu') }}" class="btn btn-outline-secondary btn-sm w-100 mb-3"><i class="bi bi-file-earmark-arrow-down"></i> Exporter le menu actuel</a>
+      <div class="form-text mb-2">Les ingrédients cités doivent déjà exister dans le Stock.</div>
+      {{ import_form('excel.import_menu') }}
+    </div></div>
+  </div>
+
+  <div class="col-md-6 col-xl-4">
+    <div class="card shadow-sm h-100"><div class="card-body d-flex flex-column">
+      <h5 class="card-title"><i class="bi bi-cart"></i> Achats</h5>
+      <p class="small text-muted">date, fournisseur, ingredient, quantité, prix_unitaire, source_financement</p>
+      <a href="{{ url_for('excel.template_achats') }}" class="btn btn-outline-secondary btn-sm w-100 mb-2"><i class="bi bi-download"></i> Télécharger le modèle</a>
+      <a href="{{ url_for('excel.export_achats') }}" class="btn btn-outline-secondary btn-sm w-100 mb-3"><i class="bi bi-file-earmark-arrow-down"></i> Exporter les achats</a>
+      <div class="form-text mb-2">Le stock augmente automatiquement. <strong>N'importez pas deux fois</strong> le même fichier.</div>
+      {{ import_form('excel.import_achats') }}
+    </div></div>
+  </div>
+
+  <div class="col-md-6 col-xl-4">
+    <div class="card shadow-sm h-100"><div class="card-body d-flex flex-column">
+      <h5 class="card-title"><i class="bi bi-lightning-charge"></i> Dépenses</h5>
+      <p class="small text-muted">date, type (fixe / variable), catégorie, montant, description, source_financement</p>
+      <a href="{{ url_for('excel.template_depenses') }}" class="btn btn-outline-secondary btn-sm w-100 mb-2"><i class="bi bi-download"></i> Télécharger le modèle</a>
+      <a href="{{ url_for('excel.export_depenses') }}" class="btn btn-outline-secondary btn-sm w-100 mb-3"><i class="bi bi-file-earmark-arrow-down"></i> Exporter les dépenses</a>
+      <div class="form-text mb-2"><strong>N'importez pas deux fois</strong> le même fichier.</div>
+      {{ import_form('excel.import_depenses') }}
+    </div></div>
+  </div>
+
+  <div class="col-md-6 col-xl-4">
+    <div class="card shadow-sm h-100"><div class="card-body d-flex flex-column">
+      <h5 class="card-title"><i class="bi bi-receipt"></i> Ventes</h5>
+      <p class="small text-muted">Détail de chaque ticket (menu, quantité, prix, serveur, paiement) + une feuille « ventes par jour ».</p>
+      <a href="{{ url_for('excel.export_ventes') }}" class="btn btn-outline-secondary btn-sm w-100 mb-3"><i class="bi bi-file-earmark-arrow-down"></i> Exporter les ventes</a>
+      <div class="form-text">Les ventes s'enregistrent à la caisse (Nouvelle vente) : pas d'import.</div>
+    </div></div>
+  </div>
+</div>
+{% endblock %}

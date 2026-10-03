@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+{% block title %}Dépenses{% endblock %}
+{% block page_title %}Dépenses{% endblock %}
+{% block page_subtitle %}Dépenses fixes, dépenses variables, et vue globale{% endblock %}
+{% block content %}
+
+<ul class="nav nav-pills mb-3 gap-1">
+  <li class="nav-item">
+    <a class="nav-link {{ 'active' if view == 'split' }}" href="{{ url_for('expenses.expenses_list') }}"><i class="bi bi-layout-split"></i> Fixes &amp; Variables</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {{ 'active' if view == 'global' }}" href="{{ url_for('expenses.expenses_list', view='global') }}"><i class="bi bi-list-ul"></i> Vue globale</a>
+  </li>
+</ul>
+
+{% if view == 'split' %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <div class="d-flex align-items-center gap-2">
+    <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('expenses.expenses_list', m=prev_key) }}" title="Mois précédent"><i class="bi bi-chevron-left"></i></a>
+    <h2 class="h5 mb-0 px-1" style="min-width:150px;text-align:center">{{ month_label }}</h2>
+    <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('expenses.expenses_list', m=next_key) }}" title="Mois suivant"><i class="bi bi-chevron-right"></i></a>
+    {% if not is_current_month %}<a class="btn btn-sm btn-link" href="{{ url_for('expenses.expenses_list') }}">Mois en cours</a>{% endif %}
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card bg-orders shadow-sm">
+      <div class="stat-icon-circle"><i class="bi bi-house-lock"></i></div>
+      <div class="stat-label">Dépenses fixes payées</div>
+      <div class="stat-value">{{ fixed_paid_total|ar }} Ar</div>
+      <div class="small opacity-75">Prévu : {{ fixed_planned|ar }} Ar</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card bg-expense shadow-sm">
+      <div class="stat-icon-circle"><i class="bi bi-shuffle"></i></div>
+      <div class="stat-label">Dépenses variables</div>
+      <div class="stat-value">{{ variable_total|ar }} Ar</div>
+      <div class="small opacity-75">{{ variable_expenses|rejectattr('is_cancelled')|list|length }} ligne(s)</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card bg-profit shadow-sm">
+      <div class="stat-icon-circle"><i class="bi bi-cart"></i></div>
+      <div class="stat-label">Achats d'ingrédients</div>
+      <div class="stat-value">{{ purchases_total|ar }} Ar</div>
+      <div class="small opacity-75">Voir « Achats »</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card bg-money shadow-sm">
+      <div class="stat-icon-circle"><i class="bi bi-wallet2"></i></div>
+      <div class="stat-label">Total global du mois</div>
+      <div class="stat-value">{{ grand_total|ar }} Ar</div>
+      <div class="small opacity-75">Fixes + variables + achats</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <!-- ======================= DÉPENSES FIXES ======================= -->
+  <div class="col-lg-6">
+    <div class="card rm-widget-card shadow-sm p-3 rm-exp-col rm-exp-fixed">
+      <div class="rm-exp-col-head">
+        <div>
+          <h3 class="rm-exp-col-title"><i class="bi bi-house-lock"></i> Dépenses fixes</h3>
+          <div class="rm-exp-col-sub">Reviennent chaque mois : loyer, salaires, abonnements...</div>
+        </div>
+        <div class="text-end">
+          <div class="rm-exp-total">{{ fixed_paid_total|ar }} Ar</div>
+          <div class="rm-exp-col-sub">sur {{ fixed_planned|ar }} Ar prévus</div>
+        </div>
+      </div>
+
+      {% if fixed_planned > 0 %}
+      {% set pct = [ (fixed_paid_total / fixed_planned * 100)|round(0), 100 ]|min %}
+      <div class="progress rm-progress-thin mb-3" title="{{ pct|int }} % payé">
+        <div class="progress-bar bg-primary" style="width: {{ pct }}%"></div>
+      </div>
+      {% endif %}
+
+      {% for row in fixed_rows %}
+      {% set fx = row.fx %}
+      <div class="rm-fixed-row">
+        <div class="flex-grow-1" style="min-width:0">
+          <div class="fw-semibold">
+            {{ fx.name }}
+            {% if can_edit_fixed %}
+            <a href="{{ url_for('expenses.fixed_edit', fixed_id=fx.id) }}" class="text-muted small ms-1" title="Modifier"><i class="bi bi-pencil"></i></a>
+            {% endif %}
+          </div>
+          <div class="small text-muted">
+            {{ fx.category }} · {{ fx.amount|ar }} Ar / mois{% if fx.due_day %} · échéance le {{ fx.due_day }}{% endif %}
+          </div>
+          {% for p in row.payments %}
+          <div class="small text-success"><i class="bi bi-check2"></i> {{ p.amount|ar }} Ar payé le {{ p.date|local('%d/%m') }}{% if p.created_by %} par {{ p.created_by.username }}{% endif %}</div>
+          {% endfor %}
+        </div>
+        <div class="text-end flex-shrink-0">
+          {% if row.status == 'paid' %}
+          <span class="badge text-bg-success"><i class="bi bi-check-circle"></i> Payé</span>
+          {% else %}
+          {% if row.status == 'partial' %}<span class="badge text-bg-warning text-dark mb-1">Reste {{ row.remaining|ar }}</span><br>{% else %}<span class="badge text-bg-light text-dark border mb-1">À payer</span><br>{% endif %}
+          <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#payModal"
+                  data-id="{{ fx.id }}" data-name="{{ fx.name }}" data-amount="{{ '%.0f'|format(row.remaining or fx.amount) }}"
+                  data-source="{{ fx.funding_source_id or '' }}">
+            <i class="bi bi-cash"></i> Payer
+          </button>
+          {% endif %}
+        </div>
+      </div>
+      {% else %}
+      <div class="rm-empty-state"><i class="bi bi-house-lock"></i>
+        <span>Aucune dépense fixe définie.{% if can_edit_fixed %} Ajoutez le loyer, les salaires...{% endif %}</span></div>
+      {% endfor %}
+
+      {% if other_fixed %}
+      <div class="small text-muted mt-3 mb-1">Autres dépenses fixes payées ce mois</div>
+      {% for e in other_fixed %}
+      <div class="d-flex justify-content-between small py-1 {{ 'text-decoration-line-through text-muted' if e.is_cancelled }}">
+        <span>{{ e.date|local('%d/%m') }} — {{ e.fixed_expense.name if e.fixed_expense else e.category }}{% if e.description %} <span class="text-muted">({{ e.description }})</span>{% endif %}</span>
+        <strong>{{ e.amount|ar }} Ar</strong>
+      </div>
+      {% endfor %}
+      {% endif %}
+
+      <div class="mt-3 d-flex flex-wrap gap-2">
+        {% if can_edit_fixed %}
+        <a href="{{ url_for('expenses.fixed_add') }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus-lg"></i> Nouvelle dépense fixe</a>
+        {% else %}
+        <span class="small text-muted"><i class="bi bi-lock"></i> Seul l'Admin peut modifier la liste des dépenses fixes.</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================= DÉPENSES VARIABLES ======================= -->
+  <div class="col-lg-6">
+    <div class="card rm-widget-card shadow-sm p-3 rm-exp-col rm-exp-variable">
+      <div class="rm-exp-col-head">
+        <div>
+          <h3 class="rm-exp-col-title"><i class="bi bi-shuffle"></i> Dépenses variables</h3>
+          <div class="rm-exp-col-sub">Changent tout le temps : huile, cure-dents, gaz, imprévus...</div>
+        </div>
+        <div class="text-end">
+          <div class="rm-exp-total">{{ variable_total|ar }} Ar</div>
+          <div class="rm-exp-col-sub">ce mois</div>
+        </div>
+      </div>
+
+      {% if var_by_cat %}
+      <div class="mb-2">
+        {% for cat, amt in var_by_cat[:6] %}
+        <span class="badge rounded-pill text-bg-light border text-dark me-1 mb-1">{{ cat }} · {{ amt|ar }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if variable_expenses %}
+      <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
+        <table class="table table-sm align-middle mb-0">
+          <tbody>
+            {% for e in variable_expenses %}
+            <tr class="{{ 'text-decoration-line-through text-muted' if e.is_cancelled }}">
+              <td class="small text-muted" style="width:52px">{{ e.date|local('%d/%m') }}</td>
+              <td>
+                <div class="fw-semibold">{{ e.category }}</div>
+                {% if e.description %}<div class="small text-muted">{{ e.description }}</div>{% endif %}
+              </td>
+              <td class="text-end fw-semibold text-nowrap">{{ e.amount|ar }} Ar</td>
+              {% if current_user.role in ['super_admin', 'admin'] %}
+              <td style="width:36px">
+                {% if not e.is_cancelled %}
+                <form method="POST" action="{{ url_for('expenses.expense_cancel', expense_id=e.id) }}" onsubmit="return confirm('Annuler cette dépense ?');">
+                  <input type="hidden" name="next" value="{{ request.full_path }}">
+                  <button class="btn btn-sm btn-outline-danger py-0 px-1" title="Annuler"><i class="bi bi-x"></i></button>
+                </form>
+                {% endif %}
+              </td>
+              {% endif %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="rm-empty-state"><i class="bi bi-basket"></i><span>Aucune dépense variable ce mois-ci.</span></div>
+      {% endif %}
+
+      <div class="mt-3">
+        <a href="{{ url_for('expenses.expense_add', type='variable') }}" class="btn btn-sm btn-warning"><i class="bi bi-plus-lg"></i> Ajouter une dépense variable</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Fenêtre « Payer une dépense fixe » -->
+<div class="modal fade" id="payModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form method="POST" id="payForm" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Payer : <span id="payName"></span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="period" value="{{ period_key }}">
+        <div class="mb-3">
+          <label class="form-label">Montant payé (Ar)</label>
+          <input type="text" inputmode="decimal" name="amount" id="payAmount" class="form-control form-control-lg" required>
+          <div class="form-text">Paiement partiel possible (ex : avance sur salaire).</div>
+        </div>
+        <div class="row g-3">
+          <div class="col-6">
+            <label class="form-label">Date</label>
+            <input type="date" name="date" class="form-control" value="{{ today_str }}">
+          </div>
+          <div class="col-6">
+            <label class="form-label">Payé avec</label>
+            <select name="funding_source_id" id="paySource" class="form-select">
+              <option value="">— Aucune —</option>
+              {% for src in funding_sources %}<option value="{{ src.id }}">{{ src.name }}</option>{% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="mt-3">
+          <label class="form-label">Note (optionnel)</label>
+          <input type="text" name="description" class="form-control" placeholder="Ex : reçu n°...">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-link" data-bs-dismiss="modal">Annuler</button>
+        <button type="submit" class="btn btn-primary">Enregistrer le paiement</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% else %}
+<div class="alert alert-light border small"><i class="bi bi-info-circle"></i> Vue globale : toutes les dépenses (achats d'ingrédients, fixes et variables) mélangées par date — comme avant.</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if view == 'split' %}
+<script>
+document.getElementById('payModal').addEventListener('show.bs.modal', (ev) => {
+  const b = ev.relatedTarget;
+  document.getElementById('payForm').action = '{{ url_for("expenses.fixed_pay", fixed_id=0) }}'.replace('/0/', '/' + b.dataset.id + '/');
+  document.getElementById('payName').textContent = b.dataset.name;
+  document.getElementById('payAmount').value = b.dataset.amount;
+  document.getElementById('paySource').value = b.dataset.source || '';
+});
+</script>
+{% endif %}
+{% endblock %}

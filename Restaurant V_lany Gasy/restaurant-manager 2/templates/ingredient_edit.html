@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Modifier {{ ing.name }}{% endblock %}
+{% block page_title %}Modifier un ingrédient{% endblock %}
+{% block content %}
+<form method="POST" class="card shadow-sm p-4" style="max-width:600px">
+  <div class="row g-3">
+    <div class="col-8">
+      <label class="form-label">Nom</label>
+      <input type="text" name="name" class="form-control" required value="{{ ing.name }}">
+    </div>
+    <div class="col-4">
+      <label class="form-label">Code court</label>
+      <input type="text" name="code" class="form-control text-uppercase fw-bold" maxlength="6" value="{{ ing.code or '' }}">
+    </div>
+  </div>
+  <div class="form-text mb-3">Laissez le code vide pour en générer un automatiquement.</div>
+  <div class="mb-3">
+    <label class="form-label">Catégorie</label>
+    <input type="text" name="category" class="form-control" value="{{ ing.category or '' }}">
+  </div>
+  <div class="row g-3">
+    <div class="col-md-4">
+      <label class="form-label">Unité</label>
+      <input type="text" name="unit" class="form-control" value="{{ ing.unit }}" list="unitOptions">
+      <datalist id="unitOptions">{% for u in ['kg', 'l', 'pièce', 'g', 'ml', 'sachet', 'bouteille', 'boîte'] %}<option value="{{ u }}">{% endfor %}</datalist>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Seuil alerte</label>
+      <input type="text" inputmode="decimal" name="alert_threshold" class="form-control" value="{{ '%g'|format(ing.alert_threshold) }}">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Prix unitaire (Ar)</label>
+      <input type="text" inputmode="decimal" name="unit_price" class="form-control" value="{{ '%g'|format(ing.unit_price) }}">
+    </div>
+  </div>
+  <div class="alert alert-light border small mt-3 mb-3">
+    <i class="bi bi-info-circle"></i> Stock actuel : <strong>{{ '%g'|format(ing.stock_quantity) }} {{ ing.unit }}</strong>.
+    Pour changer la quantité, utilisez « Modifier » dans la liste du stock (c'est enregistré dans le journal).
+  </div>
+  <div>
+    <button type="submit" class="btn btn-primary">Enregistrer</button>
+    <a href="{{ url_for('main.stock_list') }}" class="btn btn-link">Retour</a>
+  </div>
+</form>
+{% if current_user.role in ['super_admin', 'admin'] %}
+<form method="POST" action="{{ url_for('main.ingredient_delete', ingredient_id=ing.id) }}" class="mt-3" style="max-width:600px"
+      onsubmit='return confirm({{ ("Supprimer définitivement « " ~ ing.name ~ " » ?")|tojson }});'>
+  <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i> Supprimer cet ingrédient</button>
+  <span class="small text-muted ms-2">Possible seulement s'il n'a jamais été acheté ni utilisé dans une recette.</span>
+</form>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Réinitialisation{% endblock %}
+{% block page_title %}Réinitialisation{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4 text-danger">⚠️ Réinitialisation à l'état d'origine</h1>
+
+<div class="alert alert-danger">
+  <strong>Attention, action irréversible dans l'application</strong> (mais une sauvegarde de
+  sécurité sera automatiquement créée sur le serveur avant toute suppression — vous pourrez donc
+  toujours la restaurer).
+</div>
+
+<form method="POST" class="card shadow-sm p-4" style="max-width:600px">
+  <div class="mb-3">
+    <label class="form-label">Type de réinitialisation</label>
+    <select name="reset_type" class="form-select">
+      <option value="total">Totale — supprime tout (utilisateurs, menu, stock, ventes, achats). Le compte Super-Admin par défaut est recréé.</option>
+      <option value="partiel">Partielle — supprime uniquement les ventes et achats. Le menu, le stock et les utilisateurs sont conservés.</option>
+    </select>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Pour confirmer, tapez exactement : <code>RÉINITIALISER</code></label>
+    <input type="text" name="confirmation" class="form-control" required>
+  </div>
+  <button type="submit" class="btn btn-danger"
+          onsubmit="return confirm('Êtes-vous vraiment sûr ? Cette action est difficile à annuler.');">
+    Réinitialiser maintenant
+  </button>
+  <a href="{{ url_for('backup.backups_home') }}" class="btn btn-link">Annuler</a>
+</form>
+{% endblock %}

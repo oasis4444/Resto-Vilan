@@ -1,0 +1,75 @@
+{% extends "print_base.html" %}
+{% block title %}Fiche — {{ item.name }}{% endblock %}
+{% block heading %}Fiche menu{% endblock %}
+{% block back_url %}{{ url_for('main.menu_list') }}{% endblock %}
+{% block toolbar %}
+  {% if current_user.role in ['super_admin', 'admin'] %}
+  <a href="{{ url_for('main.menu_edit', menu_id=item.id) }}"><i class="bi bi-pencil"></i> Modifier</a>
+  {% endif %}
+  <a href="{{ url_for('main.menu_print') }}"><i class="bi bi-book"></i> Imprimer toute la carte</a>
+{% endblock %}
+{% block style %}
+  .flash { background: #e8f5ec; color: #185c30; border-radius: .5rem; padding: .6rem .9rem; margin-bottom: 1rem; font-size: .88rem; }
+  .dish-top { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: start; }
+  .dish-photo { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: .8rem; }
+  .dish-ph { width: 100%; aspect-ratio: 4 / 3; border-radius: .8rem; background: #f3ebe2; display: flex; align-items: center; justify-content: center; color: #b89a80; font-size: 3rem; }
+  .dish-name { font-family: 'Fraunces', Georgia, serif; font-size: 2rem; line-height: 1.1; margin: 0 0 .3rem; }
+  .dish-cat { color: var(--muted); margin-bottom: .9rem; }
+  .dish-price { font-family: 'Fraunces', Georgia, serif; font-size: 1.8rem; color: var(--accent); font-weight: 700; }
+  .badge { display: inline-block; font-size: .75rem; font-weight: 700; padding: .2rem .6rem; border-radius: 999px; margin-top: .6rem; }
+  .ok { background: #e3f4e8; color: #1c6b36; } .ko { background: #fde7e7; color: #a4262c; }
+  .box { border: 1px solid var(--line); border-radius: .7rem; padding: .7rem .9rem; margin-top: 1rem; font-size: .88rem; }
+  h2 { font-family: 'Fraunces', Georgia, serif; font-size: 1.15rem; margin: 1.4rem 0 .5rem; }
+  @media (max-width: 600px) { .dish-top { grid-template-columns: 1fr; } }
+{% endblock %}
+{% block content %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for category, message in messages %}<div class="flash toolbar-hide">{{ message }}</div>{% endfor %}
+{% endwith %}
+<div class="dish-top keep">
+  <div>
+    {% if item.photo_filename %}
+    <img class="dish-photo" src="{{ url_for('static', filename='uploads/menu/' + item.photo_filename) }}" alt="{{ item.name }}">
+    {% else %}
+    <div class="dish-ph"><i class="bi bi-cup-hot"></i></div>
+    {% endif %}
+  </div>
+  <div>
+    <h3 class="dish-name">{{ item.name }}</h3>
+    <div class="dish-cat">{{ item.category or 'Sans catégorie' }}</div>
+    <div class="dish-price">{{ item.sale_price|ar }} Ar</div>
+    {% if item.is_really_available() %}
+    <span class="badge ok">Disponible</span>
+    {% else %}
+    <span class="badge ko">{{ 'Marqué indisponible' if not item.available else 'Rupture de stock' }}</span>
+    {% endif %}
+    {% if show_cost %}
+    <div class="box">
+      Coût des ingrédients : <strong>{{ cost|ar }} Ar</strong><br>
+      Marge par portion : <strong style="color:{{ '#1c6b36' if item.sale_price - cost >= 0 else '#a4262c' }}">{{ (item.sale_price - cost)|ar }} Ar</strong>
+      {% if item.sale_price > 0 %}({{ '%.0f'|format((item.sale_price - cost) / item.sale_price * 100) }} %){% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<h2>Recette — pour 1 portion</h2>
+{% if item.recipe_items %}
+<table>
+  <thead><tr><th>Code</th><th>Ingrédient</th><th class="num">Quantité</th>{% if show_cost %}<th class="num">Coût</th>{% endif %}</tr></thead>
+  <tbody>
+    {% for ri in item.recipe_items %}
+    <tr>
+      <td class="code">{{ ri.ingredient.code or '—' }}</td>
+      <td>{{ ri.ingredient.name }}</td>
+      <td class="num">{{ '%g'|format(ri.quantity_per_portion) }} {{ ri.ingredient.unit }}</td>
+      {% if show_cost %}<td class="num">{{ (ri.quantity_per_portion * ri.ingredient.unit_price)|ar }} Ar</td>{% endif %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p style="color:var(--muted)">Aucune recette enregistrée pour ce menu.</p>
+{% endif %}
+<style>@media print { .toolbar-hide { display: none; } }</style>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Achats{% endblock %}
+{% block page_title %}Achats{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 mb-0">🛒 Achats</h1>
+  <a href="{{ url_for('purchases.purchase_add') }}" class="btn btn-primary">
+    <i class="bi bi-plus-lg"></i> Ajouter un achat
+  </a>
+</div>
+
+<div class="table-responsive">
+<table class="table table-hover align-middle bg-body">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Ingrédient</th>
+      <th>Quantité</th>
+      <th>Prix unitaire</th>
+      <th>Total</th>
+      <th>Fournisseur</th>
+      <th>Source</th>
+      <th>Statut</th>
+      {% if current_user.role in ['super_admin', 'admin'] %}<th></th>{% endif %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in purchases %}
+    <tr class="{{ 'text-decoration-line-through text-muted' if p.is_cancelled else '' }}">
+      <td>{{ p.date|local('%d/%m/%Y') }}</td>
+      <td>{{ p.ingredient.name }}</td>
+      <td>{{ p.quantity }} {{ p.ingredient.unit }}</td>
+      <td>{{ "%.0f"|format(p.unit_price) }} Ar</td>
+      <td>{{ "%.0f"|format(p.total) }} Ar</td>
+      <td>{{ p.supplier or '—' }}</td>
+      <td>{{ p.funding_source.name if p.funding_source else '—' }}</td>
+      <td>
+        {% if p.is_cancelled %}
+        <span class="badge text-bg-secondary" title="Annulé par {{ p.cancelled_by.username if p.cancelled_by else '?' }} le {{ p.cancelled_at|local('%d/%m/%Y') if p.cancelled_at else '' }}{% if p.cancel_reason %} — {{ p.cancel_reason }}{% endif %}">
+          <i class="bi bi-x-circle"></i> Annulé
+        </span>
+        {% else %}
+        <span class="badge text-bg-success">Valide</span>
+        {% endif %}
+      </td>
+      {% if current_user.role in ['super_admin', 'admin'] %}
+      <td>
+        {% if not p.is_cancelled %}
+        <form method="POST" action="{{ url_for('purchases.purchase_cancel', purchase_id=p.id) }}"
+              onsubmit="return confirm('Annuler cet achat ? Le stock sera ajusté en conséquence.');" class="d-flex gap-1">
+          <input type="text" name="reason" class="form-control form-control-sm" style="width:130px" placeholder="Motif (optionnel)">
+          <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-circle"></i></button>
+        </form>
+        {% endif %}
+      </td>
+      {% endif %}
+    </tr>
+    {% else %}
+    <tr><td colspan="9" class="text-muted">Aucun achat enregistré pour le moment.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

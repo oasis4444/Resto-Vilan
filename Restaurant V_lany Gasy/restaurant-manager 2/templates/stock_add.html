@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Ajouter un ingrédient{% endblock %}
+{% block page_title %}Ajouter un ingrédient{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">➕ Ajouter un ingrédient</h1>
+
+<form method="POST" class="card shadow-sm p-4" style="max-width:600px">
+  <div class="row g-3">
+    <div class="col-8">
+      <label class="form-label">Nom de l'ingrédient</label>
+      <input type="text" name="name" id="ingName" class="form-control" required value="{{ form.get('name', '') }}" autocomplete="off">
+    </div>
+    <div class="col-4">
+      <label class="form-label">Code court</label>
+      <input type="text" name="code" id="ingCode" class="form-control text-uppercase fw-bold" maxlength="6"
+             placeholder="Auto" value="{{ form.get('code', '') }}" autocomplete="off">
+    </div>
+  </div>
+  <div class="form-text mb-3">Le code est proposé automatiquement (ex : Poulet → <span class="rm-code">PLT</span>, Yaourt → <span class="rm-code">YRT</span>). Vous pouvez le changer.</div>
+  <div class="mb-3">
+    <label class="form-label">Catégorie</label>
+    <input type="text" name="category" class="form-control" placeholder="Exemple : Légume, Viande, Boisson..." value="{{ form.get('category', '') }}">
+  </div>
+  <div class="row g-3">
+    <div class="col-md-4">
+      <label class="form-label">Unité</label>
+      <select name="unit" class="form-select">
+        {% for u in ['kg', 'l', 'pièce', 'g', 'ml', 'sachet', 'bouteille', 'boîte'] %}
+        <option {{ 'selected' if form.get('unit', 'pièce') == u }}>{{ u }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Stock initial</label>
+      <input type="text" inputmode="decimal" name="stock_quantity" class="form-control" value="{{ form.get('stock_quantity', '0') }}">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Seuil alerte</label>
+      <input type="text" inputmode="decimal" name="alert_threshold" class="form-control" value="{{ form.get('alert_threshold', '0') }}">
+    </div>
+  </div>
+  <div class="mb-3 mt-3">
+    <label class="form-label">Prix unitaire (Ar)</label>
+    <input type="text" inputmode="decimal" name="unit_price" class="form-control" value="{{ form.get('unit_price', '0') }}">
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <button type="submit" class="btn btn-primary">Enregistrer</button>
+    <button type="submit" name="then" value="print" class="btn btn-outline-primary"><i class="bi bi-printer"></i> Enregistrer et imprimer</button>
+    <a href="{{ url_for('main.stock_list') }}" class="btn btn-link">Retour</a>
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  const nameEl = document.getElementById('ingName');
+  const codeEl = document.getElementById('ingCode');
+  let touched = codeEl.value !== '';
+  codeEl.addEventListener('input', () => { touched = codeEl.value !== ''; codeEl.value = codeEl.value.toUpperCase(); });
+  let t;
+  nameEl.addEventListener('input', () => {
+    if (touched) return;
+    clearTimeout(t);
+    t = setTimeout(async () => {
+      try {
+        const r = await fetch('{{ url_for("main.stock_suggest_code") }}?name=' + encodeURIComponent(nameEl.value));
+        const d = await r.json();
+        codeEl.placeholder = d.code || 'Auto';
+      } catch (e) {}
+    }, 250);
+  });
+})();
+</script>
+{% endblock %}

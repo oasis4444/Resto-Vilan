@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}Nouvelle vente{% endblock %}
+{% block page_title %}Nouvelle vente{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">💰 Nouvelle vente</h1>
+
+{% if not items %}
+<div class="alert alert-warning">
+  Aucun menu disponible actuellement (stock insuffisant ou aucun menu créé).
+</div>
+{% else %}
+<form method="POST" class="card shadow-sm p-4" id="saleForm">
+  <div class="row g-3 mb-3">
+    <div class="col-md-4">
+      <label class="form-label">Table / N° de commande (optionnel)</label>
+      <input type="text" name="table_number" class="form-control" placeholder="Ex : Table 4">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Nom du client (optionnel, pour facture)</label>
+      <input type="text" name="client_name" class="form-control" placeholder="Ex : M. Rakoto">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Mode de paiement</label>
+      <select name="payment_method" class="form-select">
+        {% for pm in payment_methods %}
+        <option value="{{ pm }}">{{ pm }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <hr>
+  <h2 class="h5 mb-3">Menus commandés</h2>
+
+  <!-- En-têtes visibles uniquement sur grand écran (desktop) -->
+  <div class="row g-2 mb-1 d-none d-md-flex order-header">
+    <div class="col-md-5"><small class="text-muted fw-semibold">Menu</small></div>
+    <div class="col-md-2"><small class="text-muted fw-semibold">Quantité</small></div>
+    <div class="col-md-2"><small class="text-muted fw-semibold">Prix unitaire</small></div>
+    <div class="col-md-2"><small class="text-muted fw-semibold">Sous-total</small></div>
+    <div class="col-md-1"></div>
+  </div>
+
+  <div id="orderRows">
+    <div class="order-row card card-body mb-2 p-2 p-md-3">
+      <div class="row g-2 align-items-center">
+        <div class="col-12 col-md-5">
+          <label class="form-label small text-muted d-md-none mb-1">Menu</label>
+          <select name="menu_item_id[]" class="form-select menu-select">
+            <option value="">— Sélectionnez un menu —</option>
+            {% for item in items %}
+            <option value="{{ item.id }}" data-price="{{ item.sale_price }}">{{ item.name }}{% if item.category %} ({{ item.category }}){% endif %}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label small text-muted d-md-none mb-1">Quantité</label>
+          <input type="number" name="quantity[]" class="form-control qty-input" value="1" min="1" max="50">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label small text-muted d-md-none mb-1">Prix unitaire</label>
+          <input type="text" class="form-control price-display" readonly value="0 Ar">
+        </div>
+        <div class="col-9 col-md-2">
+          <label class="form-label small text-muted d-md-none mb-1">Sous-total</label>
+          <input type="text" class="form-control subtotal-display fw-semibold" readonly value="0 Ar">
+        </div>
+        <div class="col-3 col-md-1 d-flex align-items-end justify-content-end h-100">
+          <button type="button" class="btn btn-sm btn-outline-danger remove-row" title="Retirer">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button type="button" id="addRowBtn" class="btn btn-sm btn-outline-secondary mb-3">
+    <i class="bi bi-plus"></i> Ajouter un menu
+  </button>
+
+  <div class="d-flex justify-content-end mb-3">
+    <div class="text-end">
+      <div class="text-muted small">Total de la commande</div>
+      <div class="h3" id="grandTotalDisplay">0 Ar</div>
+    </div>
+  </div>
+
+  <div>
+    <button type="submit" class="btn btn-primary btn-lg">
+      <i class="bi bi-check-circle"></i> Valider la vente
+    </button>
+  </div>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function formatAr(n) {
+  return new Intl.NumberFormat('fr-FR').format(Math.round(n)) + ' Ar';
+}
+
+function updateRow(row) {
+  const select = row.querySelector('.menu-select');
+  const qtyInput = row.querySelector('.qty-input');
+  const priceDisplay = row.querySelector('.price-display');
+  const subtotalDisplay = row.querySelector('.subtotal-display');
+
+  const selectedOption = select.options[select.selectedIndex];
+  const price = selectedOption ? parseFloat(selectedOption.dataset.price || 0) : 0;
+  const qty = parseInt(qtyInput.value || 0, 10);
+
+  priceDisplay.value = formatAr(price);
+  subtotalDisplay.value = formatAr(price * qty);
+
+  updateGrandTotal();
+}
+
+function updateGrandTotal() {
+  let total = 0;
+  document.querySelectorAll('.order-row').forEach((row) => {
+    const select = row.querySelector('.menu-select');
+    const qtyInput = row.querySelector('.qty-input');
+    const selectedOption = select.options[select.selectedIndex];
+    const price = selectedOption ? parseFloat(selectedOption.dataset.price || 0) : 0;
+    const qty = parseInt(qtyInput.value || 0, 10);
+    total += price * qty;
+  });
+  document.getElementById('grandTotalDisplay').textContent = formatAr(total);
+}
+
+function attachRowEvents(row) {
+  row.querySelector('.menu-select').addEventListener('change', () => updateRow(row));
+  row.querySelector('.qty-input').addEventListener('input', () => updateRow(row));
+  const removeBtn = row.querySelector('.remove-row');
+  removeBtn.addEventListener('click', () => {
+    const rows = document.querySelectorAll('.order-row');
+    if (rows.length > 1) {
+      row.remove();
+      updateGrandTotal();
+    } else {
+      // Garde au moins une ligne, mais la réinitialise
+      row.querySelector('.menu-select').value = '';
+      row.querySelector('.qty-input').value = 1;
+      updateRow(row);
+    }
+  });
+}
+
+document.querySelectorAll('.order-row').forEach(attachRowEvents);
+
+document.getElementById('addRowBtn').addEventListener('click', () => {
+  const rows = document.getElementById('orderRows');
+  const template = rows.querySelector('.order-row');
+  const clone = template.cloneNode(true);
+  clone.querySelector('.menu-select').value = '';
+  clone.querySelector('.qty-input').value = 1;
+  clone.querySelector('.price-display').value = '0 Ar';
+  clone.querySelector('.subtotal-display').value = '0 Ar';
+  rows.appendChild(clone);
+  attachRowEvents(clone);
+});
+
+document.getElementById('saleForm').addEventListener('submit', (e) => {
+  // Empêche l'envoi de lignes vides (menu non sélectionné)
+  document.querySelectorAll('.order-row').forEach((row) => {
+    const select = row.querySelector('.menu-select');
+    if (!select.value) {
+      select.name = '';
+      row.querySelector('.qty-input').name = '';
+    }
+  });
+});
+</script>
+{% endblock %}

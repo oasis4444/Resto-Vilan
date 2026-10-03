@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ticket {{ sale.receipt_number() }}</title>
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='icons/icon-192.png') }}">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+{% set paper = settings.receipt_width_mm() if settings else 80 %}
+{# Zone imprimable réelle : 72 mm sur papier 80, 48 mm sur papier 58 #}
+{% set printable = 72 if paper == 80 else 48 %}
+<style>
+  :root { --paper: {{ paper }}mm; --printable: {{ printable }}mm; --fs: {{ '12px' if paper == 80 else '10.5px' }}; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #e9e6e1; color: #000; }
+  body { font-family: 'Courier New', Courier, monospace; font-size: var(--fs); line-height: 1.35; }
+
+  .toolbar { display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap; padding: .75rem; background: #2a1a10;
+             font-family: -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; }
+  .toolbar a, .toolbar button { font-size: .9rem; font-weight: 600; border: 0; border-radius: .5rem; padding: .55rem 1rem;
+             cursor: pointer; text-decoration: none; background: #fff; color: #2a1a10; display: inline-flex; gap: .4rem; align-items: center; }
+  .toolbar .primary { background: #f2b705; }
+  .hint { text-align: center; font: .78rem -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; color: #6b625a; margin: .6rem 1rem 0; }
+
+  .paper { width: var(--paper); margin: 1rem auto 2rem; background: #fff; padding: 3mm calc((var(--paper) - var(--printable)) / 2);
+           box-shadow: 0 6px 20px rgba(0,0,0,.15); }
+  .ticket { width: 100%; }
+  .c { text-align: center; }
+  .logo { width: {{ '26mm' if paper == 80 else '20mm' }}; height: auto; display: block; margin: 0 auto 1mm; }
+  .name { font-weight: 700; font-size: 1.25em; }
+  .sep { border: 0; border-top: 1px dashed #000; margin: 2mm 0; }
+  .row { display: flex; justify-content: space-between; gap: 2mm; }
+  .item { margin-bottom: 1.2mm; }
+  .item .lbl { font-weight: 700; word-break: break-word; }
+  .item .sub { display: flex; justify-content: space-between; }
+  .total { font-weight: 700; font-size: 1.35em; }
+  .thanks { text-align: center; font-weight: 700; margin-top: 1mm; }
+
+  @media print {
+    html, body { background: #fff; }
+    .toolbar, .hint { display: none !important; }
+    .paper { margin: 0; box-shadow: none; width: var(--paper); }
+  }
+</style>
+<style id="pageSize">@page { size: {{ paper }}mm 200mm; margin: 0; }</style>
+</head>
+<body>
+<div class="toolbar">
+  <button class="primary" onclick="printTicket()"><i class="bi bi-printer"></i> Imprimer le ticket</button>
+  {% if current_user.role in ['super_admin', 'admin'] %}
+  <a href="{{ url_for('sales.sale_invoice', sale_id=sale.id) }}"><i class="bi bi-file-earmark-text"></i> Facture</a>
+  {% endif %}
+  {% if current_user.role in ['super_admin', 'admin', 'server', 'cashier'] %}
+  <a href="{{ url_for('sales.sale_new') }}"><i class="bi bi-plus-lg"></i> Nouvelle vente</a>
+  {% endif %}
+  <a href="{{ url_for('sales.sale_list') if current_user.role in ['super_admin', 'admin', 'cashier'] else url_for('main.home') }}"><i class="bi bi-arrow-left"></i> Retour</a>
+</div>
+<p class="hint">Papier {{ paper }} mm — dans la fenêtre d'impression, choisissez l'imprimante du ticket, marges « Aucune », échelle 100 %.</p>
+
+<div class="paper">
+<div class="ticket" id="ticket">
+  <div class="c">
+    {% if settings and settings.logo_filename %}
+    <img class="logo" src="{{ restaurant_logo_url() }}" alt="" style="filter: grayscale(1) contrast(1.2)">
+    {% else %}
+    <img class="logo" src="{{ url_for('static', filename='images/restaurant-logo-ticket.png') }}" alt="">
+    {% endif %}
+    <div class="name">{{ settings.restaurant_name if settings else 'RESTAURANT' }}</div>
+    {% if settings and settings.address %}<div>{{ settings.address }}</div>{% endif %}
+    {% if settings and settings.phone %}<div>Tél : {{ settings.phone }}</div>{% endif %}
+    {% if settings and settings.nif %}<div>NIF : {{ settings.nif }}{% if settings.stat %} · STAT : {{ settings.stat }}{% endif %}</div>{% endif %}
+  </div>
+  <hr class="sep">
+  <div class="row"><span>Ticket</span><span>{{ sale.receipt_number() }}</span></div>
+  <div class="row"><span>Date</span><span>{{ sale.created_at|local('%d/%m/%Y %H:%M') }}</span></div>
+  {% if sale.table_number %}<div class="row"><span>Table</span><span>{{ sale.table_number }}</span></div>{% endif %}
+  <div class="row"><span>Servi par</span><span>{{ sale.server.username }}</span></div>
+  {% if sale.client_name %}<div class="row"><span>Client</span><span>{{ sale.client_name }}</span></div>{% endif %}
+  <hr class="sep">
+  {% for item in sale.items %}
+  <div class="item">
+    <div class="lbl">{{ item.menu_item.name }}</div>
+    <div class="sub"><span>{{ item.quantity }} x {{ item.unit_price|ar }}</span><span>{{ item.line_total|ar }}</span></div>
+  </div>
+  {% endfor %}
+  <hr class="sep">
+  <div class="row total"><span>TOTAL</span><span>{{ sale.total|ar }} Ar</span></div>
+  <div class="row"><span>Paiement</span><span>{{ sale.payment_method }}</span></div>
+  <hr class="sep">
+  <div class="thanks">{{ settings.receipt_message_or_default() if settings else 'Misaotra betsaka !' }}</div>
+</div>
+</div>
+
+<script>
+  // Le ticket s'imprime à SA longueur exacte : on mesure la hauteur réelle du
+  // contenu et on règle la taille de la page d'impression en conséquence.
+  // Résultat : 1 article = ticket court, 10 articles = ticket plus long.
+  function fitPageToTicket() {
+    const paper = document.querySelector('.paper');
+    const px = paper.getBoundingClientRect().height;
+    const mm = Math.ceil(px * 25.4 / 96) + 4; // + petite marge de coupe
+    document.getElementById('pageSize').textContent =
+      '@page { size: {{ paper }}mm ' + mm + 'mm; margin: 0; }';
+  }
+  function printTicket() { fitPageToTicket(); window.print(); }
+  window.addEventListener('beforeprint', fitPageToTicket);
+  window.addEventListener('load', () => {
+    fitPageToTicket();
+    {% if autoprint %}setTimeout(printTicket, 300);{% endif %}
+  });
+</script>
+</body>
+</html>

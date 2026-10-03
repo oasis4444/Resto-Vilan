@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Ajouter un utilisateur{% endblock %}
+{% block page_title %}Ajouter un utilisateur{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">➕ Ajouter un utilisateur</h1>
+
+<form method="POST" class="card shadow-sm p-4" style="max-width:500px">
+  <div class="mb-3">
+    <label class="form-label">Nom d'utilisateur</label>
+    <input type="text" name="username" class="form-control" required>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Rôle</label>
+    <select name="role" class="form-select" required>
+      {% for value, label in roles %}
+        {% if value != 'super_admin' %}
+        <option value="{{ value }}">{{ label }}</option>
+        {% endif %}
+      {% endfor %}
+    </select>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Mot de passe temporaire</label>
+    <input type="text" name="temp_password" class="form-control" required minlength="8">
+    <div class="form-text">L'utilisateur devra changer ce mot de passe lors de sa première connexion.</div>
+  </div>
+  <div>
+    <button type="submit" class="btn btn-primary">Enregistrer</button>
+    <a href="{{ url_for('main.users_list') }}" class="btn btn-link">Retour</a>
+  </div>
+</form>
+{% endblock %}

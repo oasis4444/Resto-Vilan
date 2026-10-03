@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Modifier {{ item.name }}{% endblock %}
+{% block page_title %}Modifier un menu{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">✏️ Modifier « {{ item.name }} »</h1>
+
+<form method="POST" enctype="multipart/form-data" class="card shadow-sm p-4">
+  <div class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label">Nom du menu</label>
+      <input type="text" name="name" class="form-control" required value="{{ item.name }}">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Catégorie</label>
+      <input type="text" name="category" class="form-control" list="categoryOptions"
+             placeholder="Ex : Plat, Spécialité..." value="{{ item.category or '' }}">
+      <datalist id="categoryOptions">
+        <option value="Entrée">
+        <option value="Plat">
+        <option value="Dessert">
+        <option value="Boisson">
+      </datalist>
+      <div class="form-text">Choisissez une suggestion ou écrivez n'importe quelle catégorie.</div>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Prix (Ar)</label>
+      <input type="text" inputmode="decimal" name="sale_price" class="form-control" required value="{{ '%g'|format(item.sale_price) }}">
+    </div>
+  </div>
+
+  <div class="row g-3 mt-1">
+    <div class="col-md-6">
+      <label class="form-label">{{ 'Remplacer la photo' if item.photo_filename else 'Photo du plat (optionnel)' }}</label>
+      <input type="file" name="photo" accept=".png,.jpg,.jpeg,.webp" class="form-control">
+      <div class="form-text">PNG, JPG ou WEBP. L'ancienne photo est effacée du serveur.</div>
+    </div>
+    {% if item.photo_filename %}
+    <div class="col-md-6 d-flex align-items-center gap-3">
+      <img src="{{ url_for('static', filename='uploads/menu/' + item.photo_filename) }}" alt="" style="height:90px;width:120px;object-fit:cover;border-radius:.6rem">
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="remove_photo" value="1" id="removePhoto">
+        <label class="form-check-label" for="removePhoto">Supprimer cette photo</label>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <hr class="my-4">
+  <h2 class="h5">Recette (ingrédients nécessaires)</h2>
+  {% with lines = item.recipe_items %}{% include '_recipe_rows.html' %}{% endwith %}
+
+  <div>
+    <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+    <a href="{{ url_for('main.menu_list') }}" class="btn btn-link">Retour</a>
+    <a href="{{ url_for('main.menu_detail', menu_id=item.id) }}" class="btn btn-link"><i class="bi bi-printer"></i> Fiche</a>
+  </div>
+</form>
+{% endblock %}
+

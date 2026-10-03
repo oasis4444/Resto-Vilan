@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Accueil — {{ settings.restaurant_name if settings else 'Restaurant' }}{% endblock %}
+{% block page_title %}Accueil{% endblock %}
+{% block content %}
+
+<section class="rm-home-hero">
+  <img src="{{ restaurant_logo_url() }}" alt="{{ settings.restaurant_name if settings else 'Logo' }}" class="rm-home-logo">
+  <div>
+    <h2 class="rm-home-greeting">{{ greeting }}, {{ current_user.username|capitalize }}</h2>
+    <div class="rm-home-date">{{ date_label }}</div>
+    <span class="rm-home-role"><i class="bi bi-person-badge"></i> {{ current_user.role_label() }}</span>
+  </div>
+</section>
+
+<h3 class="h6 text-muted mb-3">Que voulez-vous faire ?</h3>
+<div class="rm-home-actions">
+  {% set role = current_user.role %}
+
+  {% if role in ['super_admin', 'admin', 'accountant', 'cashier'] %}
+  <a href="{{ url_for('main.dashboard') }}" class="rm-home-action is-primary">
+    <i class="bi bi-speedometer2"></i>
+    <strong>Tableau de bord</strong>
+    <span>Chiffres, graphiques, bilan</span>
+  </a>
+  {% endif %}
+
+  {% if role in ['super_admin', 'admin', 'server', 'cashier'] %}
+  <a href="{{ url_for('sales.sale_new') }}" class="rm-home-action {{ 'is-primary' if role == 'server' }}">
+    <i class="bi bi-cash-coin"></i>
+    <strong>Nouvelle vente</strong>
+    <span>Prendre une commande</span>
+  </a>
+  {% endif %}
+
+  {% if role in ['super_admin', 'admin', 'cashier'] %}
+  <a href="{{ url_for('sales.sale_list') }}" class="rm-home-action">
+    <i class="bi bi-receipt"></i>
+    <strong>Ventes</strong>
+    <span>Tickets et encaissements</span>
+  </a>
+  {% endif %}
+
+  <a href="{{ url_for('main.menu_list') }}" class="rm-home-action">
+    <i class="bi bi-cup-hot"></i>
+    <strong>Menus</strong>
+    <span>La carte du restaurant</span>
+  </a>
+
+  {% if role in ['super_admin', 'admin', 'stock_manager'] %}
+  <a href="{{ url_for('main.stock_list') }}" class="rm-home-action">
+    <i class="bi bi-box-seam"></i>
+    <strong>Stock</strong>
+    <span>Ingrédients et quantités</span>
+  </a>
+  {% endif %}
+
+  {% if role in ['super_admin', 'admin', 'accountant'] %}
+  <a href="{{ url_for('purchases.purchase_add') }}" class="rm-home-action">
+    <i class="bi bi-cart-plus"></i>
+    <strong>Nouvel achat</strong>
+    <span>Ingrédient acheté au marché</span>
+  </a>
+  <a href="{{ url_for('expenses.expenses_list') }}" class="rm-home-action">
+    <i class="bi bi-lightning-charge"></i>
+    <strong>Dépenses</strong>
+    <span>Fixes et variables</span>
+  </a>
+  {% endif %}
+
+  {% if role in ['super_admin', 'admin'] %}
+  <a href="{{ url_for('main.users_list') }}" class="rm-home-action">
+    <i class="bi bi-people"></i>
+    <strong>Utilisateurs</strong>
+    <span>Comptes du personnel</span>
+  </a>
+  {% endif %}
+</div>
+
+<div class="row g-3">
+  <div class="{{ 'col-lg-8' if low_stock_count else 'col-12' }}">
+    <div class="card rm-widget-card shadow-sm p-3 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="rm-widget-title"><i class="bi bi-egg-fried"></i> Disponible aujourd'hui</div>
+        <span class="rm-period-badge">{{ available_menus|length }} / {{ total_menus }} menus</span>
+      </div>
+      {% if available_menus %}
+      <div>
+        {% for m in available_menus %}
+        <span class="rm-dish-chip">
+          {% if m.photo_filename %}
+          <img src="{{ url_for('static', filename='uploads/menu/' + m.photo_filename) }}" alt="">
+          {% else %}
+          <span class="rm-dish-dot"><i class="bi bi-cup-hot"></i></span>
+          {% endif %}
+          {{ m.name }}
+        </span>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="rm-empty-state"><i class="bi bi-cup"></i><span>Aucun menu disponible pour le moment.</span></div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if low_stock_count %}
+  <div class="col-lg-4">
+    <a href="{{ url_for('main.stock_list') }}" class="card rm-widget-card shadow-sm p-3 h-100 text-decoration-none border-danger-subtle">
+      <div class="rm-widget-title text-danger mb-2"><i class="bi bi-exclamation-triangle"></i> Stock à surveiller</div>
+      <p class="mb-0 text-body">{{ low_stock_count }} ingrédient(s) arrivent au seuil d'alerte.</p>
+      <span class="small mt-2">Voir le stock</span>
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

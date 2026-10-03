@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Modifier' if fx else 'Nouvelle' }} dépense fixe{% endblock %}
+{% block page_title %}{{ 'Modifier une dépense fixe' if fx else 'Nouvelle dépense fixe' }}{% endblock %}
+{% block page_subtitle %}Montant prévu chaque mois — réservé à l'Admin{% endblock %}
+{% block content %}
+{% set v = form if form else {} %}
+<form method="POST" class="card shadow-sm p-4" style="max-width:600px">
+  <div class="mb-3">
+    <label class="form-label">Nom</label>
+    <input type="text" name="name" class="form-control" required maxlength="150"
+           value="{{ v.get('name') or (fx.name if fx else '') }}" placeholder="Ex : Loyer, Salaire Rivo, Canal+...">
+  </div>
+  <div class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label">Catégorie</label>
+      <input type="text" name="category" class="form-control" list="fixedCats"
+             value="{{ v.get('category') or (fx.category if fx else 'Loyer') }}">
+      <datalist id="fixedCats">{% for c in categories %}<option value="{{ c }}">{% endfor %}</datalist>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Montant mensuel (Ar)</label>
+      <input type="text" inputmode="decimal" name="amount" class="form-control" required
+             value="{{ v.get('amount') or ('%.0f'|format(fx.amount) if fx else '') }}" placeholder="Ex : 500000">
+    </div>
+  </div>
+  <div class="row g-3 mt-1">
+    <div class="col-md-6">
+      <label class="form-label">Jour d'échéance (optionnel)</label>
+      <input type="number" min="1" max="31" name="due_day" class="form-control"
+             value="{{ v.get('due_day') or (fx.due_day if fx and fx.due_day else '') }}" placeholder="Ex : 5">
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Payé habituellement avec</label>
+      <select name="funding_source_id" class="form-select">
+        <option value="">— Aucune —</option>
+        {% for src in funding_sources %}
+        <option value="{{ src.id }}" {{ 'selected' if fx and fx.funding_source_id == src.id }}>{{ src.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  <div class="mb-3 mt-3">
+    <label class="form-label">Notes (optionnel)</label>
+    <input type="text" name="notes" class="form-control" value="{{ v.get('notes') or (fx.notes if fx and fx.notes else '') }}">
+  </div>
+  {% if fx and fx.updated_at %}
+  <p class="small text-muted">Dernière modification le {{ fx.updated_at|local('%d/%m/%Y à %H:%M') }}{% if fx.updated_by %} par {{ fx.updated_by.username }}{% endif %}.</p>
+  {% endif %}
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+    <button type="submit" class="btn btn-primary">Enregistrer</button>
+    <a href="{{ url_for('expenses.expenses_list') }}" class="btn btn-link">Retour</a>
+    {% if fx %}
+    <button type="submit" name="action" value="deactivate" class="btn btn-outline-danger ms-auto"
+            formnovalidate onclick="return confirm('Retirer « {{ fx.name }} » des dépenses fixes ? Les paiements déjà faits restent dans l\'historique.');">
+      <i class="bi bi-archive"></i> Retirer
+    </button>
+    {% endif %}
+  </div>
+</form>
+{% endblock %}

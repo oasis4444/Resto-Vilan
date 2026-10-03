@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Paramètres{% endblock %}
+{% block page_title %}Paramètres{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">⚙️ Paramètres du restaurant</h1>
+
+<form method="POST" enctype="multipart/form-data" style="max-width:720px">
+  <div class="card shadow-sm p-4 mb-4">
+    <h2 class="h5 mb-3">Identité</h2>
+    <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+      <img src="{{ restaurant_logo_url() }}" alt="Logo" style="height:90px;width:90px;object-fit:contain;background:#fff;border-radius:.8rem;padding:4px;border:1px solid rgba(0,0,0,.08)">
+      <div class="flex-grow-1">
+        <label class="form-label mb-1">Changer le logo</label>
+        <input type="file" name="logo" accept=".png,.jpg,.jpeg,.svg,.webp" class="form-control">
+        {% if settings.logo_filename %}
+        <div class="form-check mt-2">
+          <input class="form-check-input" type="checkbox" name="reset_logo" value="1" id="resetLogo">
+          <label class="form-check-label small" for="resetLogo">Revenir au logo V'lany Gasy fourni avec le logiciel</label>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Nom du restaurant</label>
+      <input type="text" name="restaurant_name" class="form-control" value="{{ settings.restaurant_name }}" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Adresse</label>
+      <input type="text" name="address" class="form-control" value="{{ settings.address or '' }}">
+    </div>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">Téléphone</label>
+        <input type="text" name="phone" class="form-control" value="{{ settings.phone or '' }}">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Couleur principale</label>
+        <input type="color" name="primary_color" class="form-control form-control-color" value="{{ settings.primary_color }}">
+      </div>
+    </div>
+    <div class="row g-3 mt-1">
+      <div class="col-md-6">
+        <label class="form-label">NIF (pour facture officielle)</label>
+        <input type="text" name="nif" class="form-control" value="{{ settings.nif or '' }}">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">STAT (pour facture officielle)</label>
+        <input type="text" name="stat" class="form-control" value="{{ settings.stat or '' }}">
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm p-4 mb-4">
+    <h2 class="h5 mb-3"><i class="bi bi-receipt"></i> Ticket de caisse</h2>
+    <div class="mb-3">
+      <label class="form-label">Message de remerciement (un seul)</label>
+      <input type="text" name="receipt_message" class="form-control" maxlength="255"
+             value="{{ settings.receipt_message or '' }}" placeholder="{{ settings.DEFAULT_RECEIPT_MESSAGE }}">
+      <div class="form-text">Laissez vide pour utiliser : « {{ settings.DEFAULT_RECEIPT_MESSAGE }} »</div>
+    </div>
+    <div>
+      <label class="form-label">Largeur du papier (imprimante thermique)</label>
+      <div class="d-flex gap-3">
+        {% for w in ['80', '58'] %}
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="receipt_width" value="{{ w }}" id="w{{ w }}"
+                 {{ 'checked' if (settings.receipt_width or '80') == w }}>
+          <label class="form-check-label" for="w{{ w }}">{{ w }} mm</label>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="form-text">Le ticket s'imprime à la longueur exacte de la commande (pas de papier gaspillé).</div>
+    </div>
+    <div class="form-check form-switch mt-3">
+      <input class="form-check-input" type="checkbox" name="auto_print_receipt" value="1" id="autoPrint"
+             {{ 'checked' if settings.auto_print_receipt }}>
+      <label class="form-check-label" for="autoPrint">Imprimer automatiquement le ticket après chaque vente</label>
+      <div class="form-text">Pratique pour les serveurs : la fenêtre d'impression s'ouvre toute seule dès que la vente est validée.</div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm p-4 mb-4" id="roles">
+    <h2 class="h5 mb-1"><i class="bi bi-tags"></i> Noms des rôles</h2>
+    <p class="text-muted small">Personnalisez le nom affiché de chaque rôle (ex : « Admin (Propriétaire) » → « Patron »).
+      Les droits d'accès ne changent pas. Laissez vide pour garder le nom par défaut.</p>
+    {% for code, default_label in default_roles %}
+    <div class="row g-2 align-items-center mb-2">
+      <div class="col-5 small text-muted">{{ default_label }}</div>
+      <div class="col-7">
+        <input type="text" name="role_label_{{ code }}" class="form-control form-control-sm" maxlength="40"
+               value="{{ custom_roles.get(code, '') }}" placeholder="{{ default_label }}">
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <button type="submit" class="btn btn-primary btn-lg">Enregistrer</button>
+</form>
+{% endblock %}

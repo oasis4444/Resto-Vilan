@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Sauvegardes{% endblock %}
+{% block page_title %}Sauvegardes{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">💾 Sauvegarde & Restauration</h1>
+
+<div class="row g-4">
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h5 class="card-title">Créer une sauvegarde maintenant</h5>
+        <p class="small text-muted">
+          Enregistre une copie complète de toutes les données (utilisateurs, menu, stock, ventes,
+          achats...) sur le serveur.
+        </p>
+        <form method="POST" action="{{ url_for('backup.backups_create') }}">
+          <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Créer une sauvegarde</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h5 class="card-title">Restaurer depuis un fichier importé</h5>
+        <p class="small text-muted">
+          ⚠️ Remplace TOUTES les données actuelles par celles du fichier de sauvegarde (.json).
+        </p>
+        <form method="POST" action="{{ url_for('backup.backups_restore_upload') }}" enctype="multipart/form-data"
+              onsubmit="return confirm('Remplacer toutes les données actuelles par ce fichier de sauvegarde ?');">
+          <input type="file" name="file" accept=".json" class="form-control form-control-sm mb-2" required>
+          <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+            <i class="bi bi-upload"></i> Restaurer depuis ce fichier
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2 class="h5 mt-5 mb-3">Sauvegardes enregistrées sur le serveur</h2>
+<div class="table-responsive">
+<table class="table table-hover align-middle bg-body">
+  <thead><tr><th>Fichier</th><th>Date</th><th>Taille</th><th></th></tr></thead>
+  <tbody>
+    {% for f in files %}
+    <tr>
+      <td>{{ f.name }}</td>
+      <td>{{ f.date }}</td>
+      <td>{{ f.size_kb }} Ko</td>
+      <td class="d-flex gap-2">
+        <a href="{{ url_for('backup.backups_download', filename=f.name) }}" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-download"></i> Télécharger
+        </a>
+        <form method="POST" action="{{ url_for('backup.backups_restore', filename=f.name) }}"
+              onsubmit="return confirm('Restaurer les données à partir de {{ f.name }} ? Cela remplace tout ce qui existe actuellement.');">
+          <button type="submit" class="btn btn-sm btn-outline-danger">
+            <i class="bi bi-arrow-counterclockwise"></i> Restaurer
+          </button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4" class="text-muted">Aucune sauvegarde enregistrée pour le moment.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<div class="mt-4">
+  <a href="{{ url_for('backup.factory_reset') }}" class="btn btn-outline-danger">
+    <i class="bi bi-exclamation-triangle"></i> Réinitialisation à l'état d'origine
+  </a>
+</div>
+{% endblock %}

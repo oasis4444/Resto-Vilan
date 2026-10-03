@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Utilisateurs{% endblock %}
+{% block page_title %}Utilisateurs{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <h1 class="h3 mb-0">👥 Utilisateurs</h1>
+  <div class="d-flex flex-wrap gap-2">
+    <a href="{{ url_for('settings.settings_page') }}#roles" class="btn btn-outline-secondary">
+      <i class="bi bi-tags"></i> Renommer les rôles
+    </a>
+    <a href="{{ url_for('main.users_add') }}" class="btn btn-primary">
+      <i class="bi bi-person-plus"></i> Ajouter un utilisateur
+    </a>
+  </div>
+</div>
+<p class="text-muted small">Cliquez sur <i class="bi bi-pencil"></i> pour changer le nom d'utilisateur (ex : « Patron », « Serveur Rivo »...).
+Les noms des rôles eux-mêmes (Admin, Serveur, Caissier...) se renomment dans <a href="{{ url_for('settings.settings_page') }}#roles">Paramètres</a>.</p>
+
+<div class="table-responsive">
+<table class="table table-hover align-middle bg-body">
+  <thead>
+    <tr>
+      <th>Nom d'utilisateur</th>
+      <th>Rôle</th>
+      <th>Email</th>
+      <th>Statut</th>
+      <th>Modifier le rôle</th>
+      {% if current_user.role == 'super_admin' %}<th>Mot de passe</th>{% endif %}
+      {% if current_user.role in ['super_admin', 'admin'] %}<th>Supprimer</th>{% endif %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for u in users %}
+    <tr class="{{ 'text-decoration-line-through text-muted' if not u.is_active else '' }}">
+      <td>
+        <strong>{{ u.username }}</strong>
+        {% if u.is_active and (u.role != 'super_admin' or current_user.role == 'super_admin') %}
+        <a href="{{ url_for('main.users_edit', user_id=u.id) }}" class="btn btn-sm btn-outline-secondary py-0 px-2 ms-1" title="Modifier le nom / rôle">
+          <i class="bi bi-pencil"></i>
+        </a>
+        {% endif %}
+      </td>
+      <td><span class="badge text-bg-secondary">{{ u.role_label() }}</span></td>
+      <td>{{ u.email or '—' }}</td>
+      <td>
+        {% if not u.is_active %}
+        <span class="badge text-bg-dark">Supprimé</span>
+        {% elif u.is_locked() %}
+        <span class="badge text-bg-danger">Bloqué</span>
+        {% elif u.must_change_password %}
+        <span class="badge text-bg-warning">Pas encore connecté</span>
+        {% else %}
+        <span class="badge text-bg-success">Actif</span>
+        {% endif %}
+      </td>
+      <td>
+        {% if u.is_active and (u.role != 'super_admin' or current_user.role == 'super_admin') %}
+        <form method="POST" action="{{ url_for('main.users_edit_role', user_id=u.id) }}" class="d-flex gap-1"
+              onsubmit="return confirm('Changer le rôle de {{ u.username }} ?');">
+          <select name="role" class="form-select form-select-sm" style="width:220px">
+            {% for value, label in roles %}
+            {% if value != 'super_admin' or current_user.role == 'super_admin' %}
+            <option value="{{ value }}" {{ 'selected' if u.role == value else '' }}>{{ label }}</option>
+            {% endif %}
+            {% endfor %}
+          </select>
+          <button type="submit" class="btn btn-sm btn-outline-primary">OK</button>
+        </form>
+        {% else %}
+        <span class="text-muted small">—</span>
+        {% endif %}
+      </td>
+      {% if current_user.role == 'super_admin' %}
+      <td>
+        {% if u.is_active %}
+        <form method="POST" action="{{ url_for('main.users_reset_password', user_id=u.id) }}"
+              onsubmit="return confirm('Réinitialiser le mot de passe de {{ u.username }} ?');" class="d-flex gap-1">
+          <input type="text" name="new_temp_password" class="form-control form-control-sm" style="width:130px" placeholder="Nouveau mdp">
+          <button type="submit" class="btn btn-sm btn-outline-warning">Réinitialiser</button>
+        </form>
+        {% else %}
+        <span class="text-muted small">—</span>
+        {% endif %}
+      </td>
+      {% endif %}
+      {% if current_user.role in ['super_admin', 'admin'] %}
+      <td>
+        {% if u.role in ['super_admin', 'admin'] %}
+        <span class="text-muted small" title="Impossible de supprimer un compte Admin/Super-Admin">
+          <i class="bi bi-shield-lock"></i>
+        </span>
+        {% elif u.is_active %}
+        <form method="POST" action="{{ url_for('main.users_delete', user_id=u.id) }}"
+              onsubmit="return confirm('Supprimer (désactiver) le compte {{ u.username }} ? Il ne pourra plus se connecter.');">
+          <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+        </form>
+        {% else %}
+        <form method="POST" action="{{ url_for('main.users_reactivate', user_id=u.id) }}"
+              onsubmit="return confirm('Réactiver le compte {{ u.username }} ?');">
+          <button type="submit" class="btn btn-sm btn-outline-success"><i class="bi bi-arrow-counterclockwise"></i> Réactiver</button>
+        </form>
+        {% endif %}
+      </td>
+      {% endif %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

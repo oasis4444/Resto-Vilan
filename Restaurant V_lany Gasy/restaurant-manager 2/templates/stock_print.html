@@ -1,0 +1,31 @@
+{% extends "print_base.html" %}
+{% block title %}Liste des ingrédients{% endblock %}
+{% block heading %}Ingrédients & codes{% endblock %}
+{% block back_url %}{{ url_for('main.stock_list') }}{% endblock %}
+{% block style %}
+  .hl td { background: #fff6d6; }
+  .blank { border-bottom: 1px solid #999; min-width: 70px; display: inline-block; height: 1em; }
+{% endblock %}
+{% block content %}
+<p style="font-size:.8rem;color:var(--muted);margin-top:0">
+  {{ ingredients|length }} ingrédient(s). La colonne « Compté » sert pour l'inventaire physique (à remplir au stylo).
+</p>
+<table>
+  <thead>
+    <tr><th>Code</th><th>Ingrédient</th><th>Catégorie</th><th class="num">Stock logiciel</th><th class="num">Seuil</th><th class="num">Prix unit.</th><th>Compté</th></tr>
+  </thead>
+  <tbody>
+    {% for ing in ingredients %}
+    <tr class="{{ 'hl' if highlight == ing.id }}">
+      <td class="code">{{ ing.code or '—' }}</td>
+      <td>{{ ing.name }}{% if ing.is_low_stock() %} <strong style="color:#b3261e">(bas)</strong>{% endif %}</td>
+      <td>{{ ing.category or '—' }}</td>
+      <td class="num">{{ '%g'|format(ing.stock_quantity) }} {{ ing.unit }}</td>
+      <td class="num">{{ '%g'|format(ing.alert_threshold) }}</td>
+      <td class="num">{{ ing.unit_price|ar }} Ar</td>
+      <td><span class="blank"></span></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

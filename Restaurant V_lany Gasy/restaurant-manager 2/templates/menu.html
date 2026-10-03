@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Menu{% endblock %}
+{% block page_title %}Menu{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <h1 class="h3 mb-0">🍽️ Menu</h1>
+  <div class="d-flex flex-wrap gap-2">
+    <a href="{{ url_for('main.menu_print') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-printer"></i> Imprimer la carte
+    </a>
+    {% if current_user.role in ['super_admin', 'admin'] %}
+    <a href="{{ url_for('main.menu_add') }}" class="btn btn-primary">
+      <i class="bi bi-plus-lg"></i> Ajouter un menu
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3">
+  {% for item in items %}
+  <div class="col-md-4">
+    <div class="card h-100 shadow-sm">
+      {% if item.photo_filename %}
+      <img src="{{ url_for('static', filename='uploads/menu/' + item.photo_filename) }}" alt="{{ item.name }}" class="card-img-top" style="height:160px; object-fit:cover;">
+      {% else %}
+      <div class="d-flex align-items-center justify-content-center bg-body-secondary" style="height:160px;">
+        <i class="bi bi-cup-hot" style="font-size:2.5rem; opacity:0.3;"></i>
+      </div>
+      {% endif %}
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <h5 class="card-title"><a href="{{ url_for('main.menu_detail', menu_id=item.id) }}" class="text-body text-decoration-none">{{ item.name }}</a></h5>
+          {% if item.is_really_available() %}
+          <span class="badge text-bg-success">Disponible</span>
+          {% else %}
+          <span class="badge text-bg-danger">{{ 'Marqué indisponible' if not item.available else 'Rupture' }}</span>
+          {% endif %}
+        </div>
+        <p class="text-muted small mb-1">{{ item.category or '—' }}</p>
+        <p class="h5">{{ item.sale_price|ar }} Ar</p>
+        <a href="{{ url_for('main.menu_detail', menu_id=item.id) }}" class="btn btn-sm btn-outline-secondary w-100 mb-2">
+          <i class="bi bi-printer"></i> Fiche / Imprimer
+        </a>
+        {% if current_user.role in ['super_admin', 'admin'] %}
+        <div class="d-flex gap-2 mb-2">
+          <a href="{{ url_for('main.menu_edit', menu_id=item.id) }}" class="btn btn-sm btn-outline-primary flex-fill">
+            <i class="bi bi-pencil"></i> Modifier
+          </a>
+          {% if item.photo_filename %}
+          <form method="POST" action="{{ url_for('main.menu_photo_delete', menu_id=item.id) }}"
+                onsubmit='return confirm({{ ("Supprimer la photo de « " ~ item.name ~ " » ?")|tojson }});'>
+            <button type="submit" class="btn btn-sm btn-outline-secondary" title="Supprimer la photo"><i class="bi bi-image"></i><i class="bi bi-x"></i></button>
+          </form>
+          {% endif %}
+          <form method="POST" action="{{ url_for('main.menu_delete', menu_id=item.id) }}"
+                onsubmit='return confirm({{ ("Supprimer le menu « " ~ item.name ~ " » ?\n\nJamais vendu : il est effacé complètement (photo comprise).\nDéjà vendu : il disparaît de la carte mais reste dans l'historique des ventes.")|tojson }});'>
+            <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer le menu"><i class="bi bi-trash"></i></button>
+          </form>
+        </div>
+        {% endif %}
+        {% if current_user.role in ['super_admin', 'admin', 'stock_manager'] %}
+        <form method="POST" action="{{ url_for('main.menu_toggle_availability', menu_id=item.id) }}">
+          {% if item.available %}
+          <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+            <i class="bi bi-x-circle"></i> Marquer indisponible
+          </button>
+          {% else %}
+          <button type="submit" class="btn btn-sm btn-outline-success w-100">
+            <i class="bi bi-check-circle"></i> Marquer disponible
+          </button>
+          {% endif %}
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <p class="text-muted">Aucun menu enregistré pour le moment. Ajoutez le premier !</p>
+  {% endfor %}
+</div>
+
+{% if archived and current_user.role in ['super_admin', 'admin'] %}
+<details class="mt-4">
+  <summary class="text-muted">Menus supprimés ({{ archived|length }}) — déjà vendus, gardés pour l'historique</summary>
+  <ul class="list-group mt-2" style="max-width:560px">
+    {% for m in archived %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+      <span>{{ m.name }} <span class="text-muted small">— {{ m.sale_price|ar }} Ar</span></span>
+      <form method="POST" action="{{ url_for('main.menu_restore', menu_id=m.id) }}">
+        <button class="btn btn-sm btn-outline-success"><i class="bi bi-arrow-counterclockwise"></i> Remettre</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+</details>
+{% endif %}
+{% endblock %}

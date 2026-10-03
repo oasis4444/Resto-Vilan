@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Impression{% endblock %} — {{ settings.restaurant_name if settings else '' }}</title>
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='icons/icon-192.png') }}">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<style>
+  :root { --ink: #2a1a10; --muted: #7a6a5e; --line: #e6ddd4; --accent: #6e3614; --gold: #d9a400; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Manrope', Arial, sans-serif; color: var(--ink); background: #f3efe9; }
+  .sheet { max-width: 210mm; margin: 0 auto; background: #fff; padding: 14mm 14mm 12mm; min-height: 100vh; }
+  .toolbar { position: sticky; top: 0; z-index: 5; display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap;
+             padding: .6rem; background: #2a1a10; }
+  .toolbar a, .toolbar button { font: 600 .9rem 'Manrope', sans-serif; border: 0; border-radius: .5rem; padding: .55rem 1rem;
+             cursor: pointer; text-decoration: none; background: #fff; color: #2a1a10; display: inline-flex; gap: .4rem; align-items: center; }
+  .toolbar .primary { background: var(--gold); color: #2a1a10; }
+  .head { display: flex; align-items: center; gap: 1rem; border-bottom: 2px solid var(--accent); padding-bottom: .8rem; margin-bottom: 1rem; }
+  .head img { width: 72px; height: 72px; object-fit: contain; }
+  .head h1 { font-family: 'Fraunces', Georgia, serif; font-size: 1.6rem; margin: 0; color: var(--accent); }
+  .head .meta { color: var(--muted); font-size: .8rem; }
+  .foot { margin-top: 1.2rem; padding-top: .5rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .72rem; display: flex; justify-content: space-between; }
+  table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  th { text-align: left; font-size: .75rem; color: var(--muted); border-bottom: 1.5px solid var(--ink); padding: .35rem .4rem; }
+  td { border-bottom: 1px solid var(--line); padding: .4rem; vertical-align: top; }
+  .num { text-align: right; white-space: nowrap; }
+  .code { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 700; letter-spacing: .04em; }
+  @media print {
+    body { background: #fff; }
+    .toolbar { display: none !important; }
+    .sheet { padding: 0; min-height: 0; max-width: none; }
+    @page { size: A4; margin: 12mm; }
+    tr, .keep { break-inside: avoid; }
+  }
+  {% block style %}{% endblock %}
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <button class="primary" onclick="window.print()"><i class="bi bi-printer"></i> Imprimer</button>
+  {% block toolbar %}{% endblock %}
+  <a href="{% block back_url %}{{ url_for('main.home') }}{% endblock %}"><i class="bi bi-arrow-left"></i> Retour</a>
+</div>
+<div class="sheet">
+  <div class="head">
+    <img src="{{ restaurant_logo_url() }}" alt="Logo">
+    <div>
+      <h1>{% block heading %}{% endblock %}</h1>
+      <div class="meta">{{ settings.restaurant_name if settings else '' }}{% if settings and settings.address %} · {{ settings.address }}{% endif %}{% if settings and settings.phone %} · Tél : {{ settings.phone }}{% endif %}</div>
+    </div>
+  </div>
+  {% block content %}{% endblock %}
+  <div class="foot">
+    <span>Imprimé le {{ printed_at.strftime('%d/%m/%Y à %H:%M') }} par {{ current_user.username }}</span>
+    <span>{{ settings.restaurant_name if settings else '' }}</span>
+  </div>
+</div>
+</body>
+</html>

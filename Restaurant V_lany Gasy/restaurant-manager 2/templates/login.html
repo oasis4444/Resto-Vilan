@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Connexion – {{ settings.restaurant_name if settings else 'Restaurant Manager' }}{% endblock %}
+{% block content %}
+<div class="auth-wrapper">
+  <div class="auth-blob auth-blob-1"></div>
+  <div class="auth-blob auth-blob-2"></div>
+
+  <div class="auth-content">
+    <div class="card auth-card shadow-lg">
+      <div class="card-body p-4">
+        <div class="text-center mb-2">
+          <img src="{{ restaurant_logo_url() }}" alt="{{ settings.restaurant_name if settings else 'Logo' }}" class="auth-logo-inline">
+        </div>
+        <p class="text-center text-muted mb-4">Connectez-vous à votre compte</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form method="POST">
+          <div class="mb-3">
+            <label class="form-label">Nom d'utilisateur</label>
+            <div class="input-group">
+              <span class="input-group-text bg-transparent"><i class="bi bi-person"></i></span>
+              <input type="text" name="username" class="form-control" required autofocus>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Mot de passe</label>
+            <div class="input-group">
+              <span class="input-group-text bg-transparent"><i class="bi bi-lock"></i></span>
+              <input type="password" name="password" class="form-control" required>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary w-100 py-2">
+            <i class="bi bi-box-arrow-in-right"></i> Se connecter
+          </button>
+        </form>
+        <div class="text-center mt-3">
+          <a href="{{ url_for('auth.forgot_password') }}" class="small"><i class="bi bi-question-circle"></i> Mot de passe oublié ?</a>
+        </div>
+      </div>
+    </div>
+
+    <p class="text-center text-white-50 small mt-4">
+      Logiciel propulsé par <strong>AORN GROUP</strong>
+    </p>
+  </div>
+</div>
+{% endblock %}

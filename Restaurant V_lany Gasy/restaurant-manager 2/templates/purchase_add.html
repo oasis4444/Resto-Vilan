@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Ajouter un achat{% endblock %}
+{% block page_title %}Ajouter un achat{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">➕ Ajouter un achat</h1>
+
+<form method="POST" class="card shadow-sm p-4" style="max-width:600px">
+  <div class="mb-3">
+    <label class="form-label">Ingrédient</label>
+    <input type="text" name="ingredient_name" class="form-control" list="ingredientOptions"
+           placeholder="Tapez le nom (existant ou nouveau)" required>
+    <datalist id="ingredientOptions">
+      {% for ing in ingredients %}
+      <option value="{{ ing.name }}">
+      {% endfor %}
+    </datalist>
+    <div class="form-text">
+      Choisissez un ingrédient existant dans les suggestions, ou écrivez un nom nouveau —
+      il sera automatiquement créé dans le Stock.
+    </div>
+  </div>
+  <div class="mb-3" id="newIngredientUnitWrap">
+    <label class="form-label">Unité (si nouvel ingrédient)</label>
+    <select name="new_unit" class="form-select">
+      <option>pièce</option>
+      <option>kg</option>
+      <option>l</option>
+      <option>g</option>
+      <option>ml</option>
+    </select>
+  </div>
+  <div class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label">Quantité achetée</label>
+      <input type="number" step="0.01" name="quantity" class="form-control" required>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Prix unitaire (Ar)</label>
+      <input type="number" step="0.01" name="unit_price" class="form-control" required>
+    </div>
+  </div>
+  <div class="mb-3 mt-3">
+    <label class="form-label">Fournisseur (optionnel)</label>
+    <input type="text" name="supplier" class="form-control">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Source de financement</label>
+    <select name="funding_source_id" class="form-select">
+      <option value="">— Aucune —</option>
+      {% for src in funding_sources %}
+      <option value="{{ src.id }}">{{ src.name }}</option>
+      {% endfor %}
+    </select>
+    {% if not funding_sources %}
+    <div class="form-text">
+      Aucune source créée. <a href="{{ url_for('purchases.funding_source_add') }}">Ajoutez-en une</a> si besoin.
+    </div>
+    {% endif %}
+  </div>
+  <div class="alert alert-info small">
+    <i class="bi bi-info-circle"></i> Le stock de l'ingrédient sera automatiquement augmenté de la quantité achetée.
+  </div>
+  <div>
+    <button type="submit" class="btn btn-primary">Enregistrer</button>
+    <a href="{{ url_for('purchases.purchase_list') }}" class="btn btn-link">Retour</a>
+  </div>
+</form>
+{% endblock %}

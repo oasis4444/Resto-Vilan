@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Résultat de l'import{% endblock %}
+{% block page_title %}Résultat de l'import{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">📥 Résultat de l'import — {{ kind }}</h1>
+
+{% if errors %}
+<div class="alert alert-danger">
+  <strong><i class="bi bi-exclamation-triangle"></i> {{ errors|length }} problème(s) trouvé(s).</strong>
+  Rien n'a été importé. Corrigez le fichier puis réessayez.
+</div>
+<ul class="list-group mb-4">
+  {% for err in errors[:200] %}
+  <li class="list-group-item">{{ err }}</li>
+  {% endfor %}
+  {% if errors|length > 200 %}<li class="list-group-item text-muted">… et {{ errors|length - 200 }} autre(s).</li>{% endif %}
+</ul>
+{% else %}
+<div class="alert alert-success">
+  <i class="bi bi-check-circle"></i>
+  Import réussi ! {{ created }} élément(s) créé(s){% if updated %}, {{ updated }} mis à jour{% endif %}.
+</div>
+{% endif %}
+
+{% if warnings %}
+<div class="alert alert-warning">
+  <strong>À vérifier :</strong>
+  <ul class="mb-0">{% for w in warnings %}<li>{{ w }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+{% if details %}
+<details class="mb-4">
+  <summary class="mb-2">Voir le détail ({{ details|length }})</summary>
+  <ul class="small">{% for d in details[:300] %}<li>{{ d }}</li>{% endfor %}</ul>
+</details>
+{% endif %}
+
+<a href="{{ url_for('excel.excel_home') }}" class="btn btn-primary">Retour à l'import/export</a>
+{% endblock %}

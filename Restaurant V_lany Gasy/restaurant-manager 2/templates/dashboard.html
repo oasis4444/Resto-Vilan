@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+{% block title %}Tableau de bord{% endblock %}
+{% block page_title %}Tableau de bord{% endblock %}
+{% block page_subtitle %}Vue d'ensemble de votre restaurant{% endblock %}
+{% block content %}
+
+<div class="rm-welcome-banner">
+  <div>
+    <h2>Bonjour, {{ current_user.username }} 👋 <span class="badge text-bg-light text-dark ms-1">{{ current_user.role_label() }}</span></h2>
+    <p>Voici un aperçu de l'activité de votre restaurant aujourd'hui.</p>
+    <a href="{{ url_for('main.home') }}" class="btn btn-sm btn-light mt-2"><i class="bi bi-eye-slash"></i> Masquer les chiffres</a>
+  </div>
+  <div class="rm-welcome-logo d-none d-md-flex">
+    <img src="{{ restaurant_logo_url() }}" alt="Logo">
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  {% if 'revenue_today' in stats %}
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card bg-money shadow-sm">
+      <div class="stat-icon-circle"><i class="bi bi-cash-stack"></i></div>
+      <div class="stat-label">Chiffre d'affaires (aujourd'hui)</div>
+      <div class="stat-value">{{ "%.0f"|format(stats.revenue_today) }} Ar</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card bg-orders shadow-sm">
+      <div class="stat-icon-circle"><i class="bi bi-cart-check"></i></div>
+      <div class="stat-label">Nombre de ventes (aujourd'hui)</div>
+      <div class="stat-value">{{ stats.sales_count_today }}</div>
+    </div>
+  </div>
+  {% endif %}
+  {% if 'expenses_today' in stats %}
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card bg-expense shadow-sm">
+      <div class="stat-icon-circle"><i class="bi bi-receipt"></i></div>
+      <div class="stat-label">Dépenses (aujourd'hui)</div>
+      <div class="stat-value">{{ "%.0f"|format(stats.expenses_today) }} Ar</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card bg-profit shadow-sm">
+      <div class="stat-icon-circle"><i class="bi bi-graph-up-arrow"></i></div>
+      <div class="stat-label">Bénéfice estimé (aujourd'hui)</div>
+      <div class="stat-value">{{ "%.0f"|format(stats.estimated_profit_today) }} Ar</div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% if 'chart_labels' in stats %}
+<div class="row g-3 mb-4">
+  <div class="col-lg-7">
+    <div class="card rm-widget-card shadow-sm p-3 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="rm-widget-title">📈 Évolution des ventes</div>
+        <span class="rm-period-badge"><i class="bi bi-calendar3"></i> 7 derniers jours</span>
+      </div>
+      <canvas id="salesChart" height="110"></canvas>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card rm-widget-card shadow-sm p-3 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="rm-widget-title">🥧 Répartition par catégorie</div>
+        <span class="rm-period-badge"><i class="bi bi-calendar3"></i> 30 derniers jours</span>
+      </div>
+      {% if stats.category_labels %}
+      <canvas id="categoryChart" height="180"></canvas>
+      {% else %}
+      <div class="rm-empty-state"><i class="bi bi-pie-chart"></i><span>Aucune vente sur cette période.</span></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+  {% if 'top_products' in stats %}
+  <div class="col-lg-4">
+    <div class="card rm-widget-card shadow-sm p-3 h-100">
+      <div class="rm-widget-title mb-2">🔥 Produits les plus vendus</div>
+      {% if stats.top_products %}
+      <ul class="list-group list-group-flush">
+        {% for p in stats.top_products %}
+        <li class="list-group-item d-flex justify-content-between px-0">
+          <span>{{ p.name }}</span>
+          <span class="badge text-bg-secondary">{{ p.quantity }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="rm-empty-state"><i class="bi bi-cup"></i><span>Aucune vente récente.</span></div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if 'low_stock' in stats %}
+  <div class="col-lg-4">
+    <div class="card rm-widget-card shadow-sm p-3 h-100">
+      <div class="rm-widget-title mb-2 {{ 'text-danger' if stats.low_stock }}">
+        <i class="bi bi-exclamation-triangle{{ '' if stats.low_stock else '' }}"></i> Alertes de stock
+      </div>
+      {% if stats.low_stock %}
+      <ul class="list-group list-group-flush">
+        {% for ing in stats.low_stock %}
+        <li class="list-group-item d-flex justify-content-between px-0">
+          <span>{{ ing.name }}</span>
+          <span class="badge text-bg-danger">{{ ing.stock_quantity }} {{ ing.unit }} (seuil {{ ing.alert_threshold }})</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="rm-empty-state"><i class="bi bi-box-seam"></i><span>Aucune alerte pour le moment.</span></div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if 'recent_purchases' in stats %}
+  <div class="col-lg-4">
+    <div class="card rm-widget-card shadow-sm p-3 h-100">
+      <div class="rm-widget-title mb-2">🛒 Achats récents</div>
+      {% if stats.recent_purchases %}
+      <ul class="list-group list-group-flush">
+        {% for p in stats.recent_purchases %}
+        <li class="list-group-item px-0">
+          <div class="d-flex justify-content-between">
+            <span>{{ p.supplier or p.ingredient.name }}</span>
+            <span class="fw-semibold">{{ "%.0f"|format(p.total) }} Ar</span>
+          </div>
+          <div class="small text-muted">{{ p.date|local('%d/%m/%Y') }} — {{ p.ingredient.name }}</div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="rm-empty-state"><i class="bi bi-cart"></i><span>Aucun achat récent.</span></div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="row g-3">
+  {% if 'recent_sales' in stats %}
+  <div class="col-lg-8">
+    <div class="card rm-widget-card shadow-sm p-3">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="rm-widget-title mb-0">🧾 Dernières ventes</div>
+        <a href="{{ url_for('sales.sale_list') }}" class="small">Voir tout →</a>
+      </div>
+      {% if stats.recent_sales %}
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead><tr><th>N°</th><th>Date</th><th>Table</th><th>Serveur</th><th>Montant</th><th>Actions</th></tr></thead>
+          <tbody>
+            {% for s in stats.recent_sales %}
+            <tr>
+              <td>{{ s.receipt_number() }}</td>
+              <td>{{ s.created_at|local('%d/%m %H:%M') }}</td>
+              <td>{{ s.table_number or '—' }}</td>
+              <td>{{ s.server.username }}</td>
+              <td>{{ "%.0f"|format(s.total) }} Ar</td>
+              <td><a href="{{ url_for('sales.sale_receipt', sale_id=s.id) }}" class="btn btn-sm btn-outline-secondary py-0 px-2"><i class="bi bi-printer"></i></a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="rm-empty-state"><i class="bi bi-receipt-cutoff"></i><span>Aucune vente enregistrée.</span></div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="col-lg-4">
+    {% if 'total_sales_all' in stats %}
+    <div class="card rm-widget-card shadow-sm p-3 mb-3">
+      <div class="rm-widget-title mb-2">💰 Résumé financier</div>
+      <div class="d-flex justify-content-between small py-1">
+        <span><i class="bi bi-graph-up-arrow text-success"></i> Total ventes</span>
+        <strong>{{ "%.0f"|format(stats.total_sales_all) }} Ar</strong>
+      </div>
+      <div class="d-flex justify-content-between small py-1">
+        <span><i class="bi bi-cart text-danger"></i> Total dépenses (achats + charges)</span>
+        <strong>{{ "%.0f"|format(stats.total_purchases_all) }} Ar</strong>
+      </div>
+      <div class="d-flex justify-content-between py-1 border-top mt-1 pt-2">
+        <span><i class="bi bi-bar-chart text-warning"></i> Bénéfice estimé</span>
+        <strong class="{{ 'text-success' if (stats.total_sales_all - stats.total_purchases_all) >= 0 else 'text-danger' }}">
+          {{ "%.0f"|format(stats.total_sales_all - stats.total_purchases_all) }} Ar
+        </strong>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="card rm-widget-card shadow-sm p-3">
+      <div class="rm-widget-title mb-2">⚡ Raccourcis</div>
+      <div class="row g-2">
+        {% if current_user.role in ['super_admin', 'admin', 'server', 'cashier'] %}
+        <div class="col-6"><a href="{{ url_for('sales.sale_new') }}" class="btn btn-success btn-sm w-100"><i class="bi bi-plus-lg"></i> Vente</a></div>
+        {% endif %}
+        {% if current_user.role in ['super_admin', 'admin', 'stock_manager'] %}
+        <div class="col-6"><a href="{{ url_for('main.stock_add') }}" class="btn btn-primary btn-sm w-100"><i class="bi bi-box-seam"></i> Ingrédient</a></div>
+        {% endif %}
+        {% if current_user.role in ['super_admin', 'admin', 'accountant'] %}
+        <div class="col-6"><a href="{{ url_for('purchases.purchase_add') }}" class="btn btn-warning btn-sm w-100"><i class="bi bi-cart"></i> Achat</a></div>
+        <div class="col-6"><a href="{{ url_for('reports.reports_dashboard') }}" class="btn btn-info btn-sm w-100 text-white"><i class="bi bi-bar-chart"></i> Rapports</a></div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if 'chart_labels' in stats %}
+<script>
+new Chart(document.getElementById('salesChart'), {
+  type: 'line',
+  data: {
+    labels: {{ stats.chart_labels|tojson }},
+    datasets: [{
+      label: 'Ventes (Ar)',
+      data: {{ stats.chart_revenue|tojson }},
+      borderColor: '#1863d6',
+      backgroundColor: 'rgba(242,113,28,0.12)',
+      fill: true, tension: 0.35, pointRadius: 3
+    }]
+  },
+  options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+});
+
+{% if stats.category_labels %}
+new Chart(document.getElementById('categoryChart'), {
+  type: 'doughnut',
+  data: {
+    labels: {{ stats.category_labels|tojson }},
+    datasets: [{
+      data: {{ stats.category_values|tojson }},
+      backgroundColor: ['#1863d6', '#2fae4e', '#e0a51f', '#8a4fe0', '#0891b2', '#6c757d']
+    }]
+  },
+  options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } }
+});
+{% endif %}
+</script>
+{% endif %}
+{% endblock %}

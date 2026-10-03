@@ -1,0 +1,12 @@
+{
+  "name": "V'lany Gasy — Restaurant Manager",
+  "short_name": "V'lany Gasy",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fffaf5",
+  "theme_color": "#1863d6",
+  "icons": [
+    { "src": "/static/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/static/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

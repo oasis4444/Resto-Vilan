@@ -1,0 +1,45 @@
+{# Lignes de recette avec champ de recherche d'ingrédient (tapez le nom ou le code).
+   Si l'ingrédient n'existe pas encore : « + Créer » directement depuis la liste.
+   Variables : ingredients, lines (liste de RecipeItem ou vide) #}
+<p class="text-muted small mb-2">
+  Tapez le <strong>nom</strong> ou le <strong>code</strong> de l'ingrédient (ex : <span class="rm-code">PLT</span>, « pou »...).
+  S'il n'existe pas encore, choisissez <strong>« + Créer »</strong> : il sera ajouté au Stock automatiquement.
+</p>
+
+<div id="recipe-rows">
+  {% set rows = lines if lines else [None] %}
+  {% for ri in rows %}
+  <div class="row g-2 mb-2 recipe-row align-items-start">
+    <div class="col-12 col-md-7 position-relative">
+      <input type="text" class="form-control rm-ing-search" placeholder="Rechercher ou créer un ingrédient..."
+             autocomplete="off" value="{{ (ri.ingredient.code ~ ' — ' if ri and ri.ingredient.code else '') ~ (ri.ingredient.name if ri else '') }}">
+      <input type="hidden" name="ingredient_id[]" class="rm-ing-id" value="{{ ri.ingredient_id if ri else '' }}">
+      <div class="rm-ing-menu" hidden></div>
+    </div>
+    <div class="col-9 col-md-4">
+      <div class="input-group">
+        <input type="text" inputmode="decimal" name="quantity[]" class="form-control" placeholder="Quantité par portion"
+               value="{{ '%g'|format(ri.quantity_per_portion) if ri else '' }}">
+        <span class="input-group-text rm-ing-unit">{{ ri.ingredient.unit if ri else '—' }}</span>
+      </div>
+    </div>
+    <div class="col-3 col-md-1">
+      <button type="button" class="btn btn-outline-secondary w-100 rm-row-remove" title="Retirer cette ligne"><i class="bi bi-x-lg"></i></button>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+<button type="button" id="add-row" class="btn btn-sm btn-outline-secondary mb-3">
+  <i class="bi bi-plus"></i> Ajouter une ligne
+</button>
+
+<script>
+  window.RM_INGREDIENTS = {{ ingredients|map(attribute='id')|list|tojson }}.map((id, i) => ({
+    id: id,
+    name: {{ ingredients|map(attribute='name')|list|tojson }}[i],
+    code: {{ ingredients|map(attribute='code')|list|tojson }}[i] || '',
+    unit: {{ ingredients|map(attribute='unit')|list|tojson }}[i] || ''
+  }));
+  window.RM_QUICK_ADD_URL = {{ url_for('main.ingredient_quick_add')|tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/recipe-picker.js') }}?v=4"></script>

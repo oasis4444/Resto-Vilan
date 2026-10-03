@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Journal des modifications de stock{% endblock %}
+{% block page_title %}Journal des modifications{% endblock %}
+{% block page_subtitle %}Traçabilité : qui a changé quoi, quand, et pourquoi{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <a href="{{ url_for('main.stock_list') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left"></i> Retour au Stock
+  </a>
+</div>
+
+<div class="alert alert-light border small">
+  <i class="bi bi-shield-check"></i>
+  Cette page enregistre <strong>chaque</strong> modification manuelle de quantité de stock —
+  utile pour vérifier à distance qu'aucune quantité n'a été changée sans explication
+  (contrôle interne, prévention du vol).
+</div>
+
+<div class="card rm-widget-card shadow-sm p-3">
+  {% if adjustments %}
+  <div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Date/Heure</th>
+          <th>Ingrédient</th>
+          <th class="text-end">Avant</th>
+          <th class="text-end">Après</th>
+          <th class="text-end">Différence</th>
+          <th>Motif</th>
+          <th>Modifié par</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in adjustments %}
+        <tr>
+          <td>{{ a.changed_at|local('%d/%m/%Y %H:%M') }}</td>
+          <td>{{ a.ingredient.name }}</td>
+          <td class="text-end">{{ a.old_quantity }} {{ a.ingredient.unit }}</td>
+          <td class="text-end">{{ a.new_quantity }} {{ a.ingredient.unit }}</td>
+          <td class="text-end fw-semibold {{ 'text-danger' if a.difference < 0 else 'text-success' }}">
+            {{ '+' if a.difference > 0 else '' }}{{ a.difference }} {{ a.ingredient.unit }}
+          </td>
+          <td class="small">{{ a.reason or '—' }}</td>
+          <td>
+            {% if a.changed_by %}
+            <span class="badge text-bg-secondary">{{ a.changed_by.username }}</span>
+            {% else %}
+            <span class="text-muted small">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="rm-empty-state"><i class="bi bi-journal-text"></i><span>Aucune modification manuelle enregistrée pour le moment.</span></div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}Rapports{% endblock %}
+{% block page_title %}Rapports{% endblock %}
+{% block page_subtitle %}Bilan de votre restaurant, sans inventaire{% endblock %}
+{% block content %}
+
+<!-- ===================== BILAN RAPIDE — PERTE OU BÉNÉFICE ? ===================== -->
+<div class="card shadow-sm mb-4 rm-bilan-card {{ 'rm-bilan-perte' if bilan_semaine.en_perte else 'rm-bilan-gain' }}">
+  <div class="p-4 d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+    <div>
+      <div class="rm-bilan-label">Bilan de la semaine en cours ({{ bilan_semaine.label }})</div>
+      {% if bilan_semaine.a_des_donnees %}
+      <div class="rm-bilan-status">
+        {% if bilan_semaine.en_perte %}
+        <i class="bi bi-exclamation-octagon-fill"></i> PERTE
+        {% else %}
+        <i class="bi bi-check-circle-fill"></i> BÉNÉFICE
+        {% endif %}
+      </div>
+      <div class="rm-bilan-amount">{{ "%.0f"|format(bilan_semaine.resultat) }} Ar</div>
+      {% else %}
+      <div class="rm-bilan-status">Pas encore de donnée cette semaine</div>
+      {% endif %}
+    </div>
+    <div class="rm-bilan-detail">
+      <div><span>Ventes</span><strong>{{ "%.0f"|format(bilan_semaine.ventes) }} Ar</strong></div>
+      <div><span>Dépenses</span><strong>{{ "%.0f"|format(bilan_semaine.depenses) }} Ar</strong></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card stat-card shadow-sm h-100">
+      <div class="text-muted small">Chiffre d'affaires total</div>
+      <div class="h4 mb-0">{{ "%.0f"|format(total_revenue) }} Ar</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card stat-card shadow-sm h-100">
+      <div class="text-muted small">CA (30 derniers jours)</div>
+      <div class="h4 mb-0">{{ "%.0f"|format(revenue_30d) }} Ar</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card stat-card shadow-sm h-100">
+      <div class="text-muted small">Total dépensé (achats + charges)</div>
+      <div class="h4 mb-0">{{ "%.0f"|format(total_spent) }} Ar</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card stat-card shadow-sm h-100">
+      <div class="text-muted small">Nombre de ventes</div>
+      <div class="h4 mb-0">{{ total_sales_count }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== RÉSUMÉ PAR SEMAINE ===================== -->
+<div class="card rm-widget-card shadow-sm p-3 mb-4">
+  <div class="rm-widget-title mb-2">📅 Résumé par semaine — gain ou perte ?</div>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+      <thead><tr><th>Semaine</th><th class="text-end">Ventes</th><th class="text-end">Dépenses</th><th class="text-end">Résultat</th><th>Statut</th></tr></thead>
+      <tbody>
+        {% for w in weekly_summary %}
+        <tr class="{{ 'table-active' if w.is_current }}">
+          <td>{{ w.label }}{% if w.is_current %} <span class="badge text-bg-secondary">en cours</span>{% endif %}</td>
+          <td class="text-end">{{ "%.0f"|format(w.ventes) }} Ar</td>
+          <td class="text-end">{{ "%.0f"|format(w.depenses) }} Ar</td>
+          <td class="text-end fw-semibold {{ 'text-danger' if w.en_perte else 'text-success' }}">{{ "%.0f"|format(w.resultat) }} Ar</td>
+          <td>
+            {% if not w.a_des_donnees %}
+            <span class="badge text-bg-light text-muted border">—</span>
+            {% elif w.en_perte %}
+            <span class="badge text-bg-danger">Perte</span>
+            {% else %}
+            <span class="badge text-bg-success">Bénéfice</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===================== RÉSUMÉ PAR MOIS ===================== -->
+<div class="card rm-widget-card shadow-sm p-3 mb-4">
+  <div class="rm-widget-title mb-2">🗓️ Résumé par mois — gain ou perte ?</div>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+      <thead><tr><th>Mois</th><th class="text-end">Ventes</th><th class="text-end">Dépenses</th><th class="text-end d-none d-md-table-cell small">dont achats / fixes / variables</th><th class="text-end">Résultat</th><th>Statut</th></tr></thead>
+      <tbody>
+        {% for m in monthly_summary %}
+        <tr class="{{ 'table-active' if m.is_current }}">
+          <td>{{ m.label }}{% if m.is_current %} <span class="badge text-bg-secondary">en cours</span>{% endif %}</td>
+          <td class="text-end">{{ "%.0f"|format(m.ventes) }} Ar</td>
+          <td class="text-end">{{ "%.0f"|format(m.depenses) }} Ar</td>
+          <td class="text-end d-none d-md-table-cell small text-muted">{{ m.achats|ar }} / {{ m.fixes|ar }} / {{ m.variables|ar }}</td>
+          <td class="text-end fw-semibold {{ 'text-danger' if m.en_perte else 'text-success' }}">{{ "%.0f"|format(m.resultat) }} Ar</td>
+          <td>
+            {% if not m.a_des_donnees %}
+            <span class="badge text-bg-light text-muted border">—</span>
+            {% elif m.en_perte %}
+            <span class="badge text-bg-danger">Perte</span>
+            {% else %}
+            <span class="badge text-bg-success">Bénéfice</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-6">
+    <h2 class="h5">🔥 Menus les plus vendus (30 jours)</h2>
+    <table class="table table-sm bg-body">
+      <thead><tr><th>Menu</th><th>Quantité vendue</th></tr></thead>
+      <tbody>
+        {% for m in top_menus %}
+        <tr><td>{{ m.name }}</td><td>{{ m.quantity }}</td></tr>
+        {% else %}
+        <tr><td colspan="2" class="text-muted">Aucune vente sur cette période.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col-md-6">
+    <h2 class="h5">💵 Marge par menu</h2>
+    <table class="table table-sm bg-body">
+      <thead><tr><th>Menu</th><th>Prix</th><th>Coût</th><th>Marge</th></tr></thead>
+      <tbody>
+        {% for m in margins %}
+        <tr>
+          <td>{{ m.name }}</td>
+          <td>{{ "%.0f"|format(m.sale_price) }}</td>
+          <td>{{ "%.0f"|format(m.cost) }}</td>
+          <td class="{{ 'text-success' if m.margin >= 0 else 'text-danger' }}">{{ "%.0f"|format(m.margin) }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-muted">Aucun menu enregistré.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col-md-6">
+    <h2 class="h5">⚠️ Stock bas</h2>
+    {% if low_stock %}
+    <ul class="list-group">
+      {% for ing in low_stock %}
+      <li class="list-group-item d-flex justify-content-between">
+        {{ ing.name }} <span class="badge text-bg-danger">{{ ing.stock_quantity }} {{ ing.unit }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-muted">Aucune alerte de stock bas actuellement.</p>
+    {% endif %}
+  </div>
+
+  <div class="col-md-6">
+    <h2 class="h5">💼 Sources de financement</h2>
+    {% if funding_sources %}
+    <ul class="list-group">
+      {% for src in funding_sources %}
+      <li class="list-group-item d-flex justify-content-between">
+        {{ src.name }}
+        <span class="{{ 'text-success' if src.balance() >= 0 else 'text-danger' }}">
+          {{ "%.0f"|format(src.balance()) }} Ar
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-muted">Aucune source de financement enregistrée.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

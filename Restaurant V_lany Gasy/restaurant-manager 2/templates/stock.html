@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Stock{% endblock %}
+{% block page_title %}Stock{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <h1 class="h3 mb-0">📦 Stock (Ingrédients)</h1>
+  <div class="d-flex flex-wrap gap-2">
+    {% if current_user.role in ['super_admin', 'admin'] %}
+    <a href="{{ url_for('main.stock_journal') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-journal-text"></i> Journal des modifications
+    </a>
+    {% endif %}
+    <a href="{{ url_for('main.stock_print') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-printer"></i> Imprimer la liste
+    </a>
+    <a href="{{ url_for('main.stock_add') }}" class="btn btn-primary">
+      <i class="bi bi-plus-lg"></i> Ajouter un ingrédient
+    </a>
+  </div>
+</div>
+
+<div class="alert alert-light border small">
+  <i class="bi bi-shield-check"></i>
+  Toute modification manuelle de quantité ci-dessous est enregistrée (qui, quand, avant/après) —
+  consultable dans le <a href="{{ url_for('main.stock_journal') }}">Journal des modifications</a>.
+</div>
+
+<div class="table-responsive">
+<table class="table table-hover align-middle bg-body">
+  <thead>
+    <tr>
+      <th>Code</th>
+      <th>Nom</th>
+      <th>Catégorie</th>
+      <th>Stock</th>
+      <th>Seuil alerte</th>
+      <th>Prix unitaire</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ing in ingredients %}
+    <tr class="{{ 'low-stock-row' if ing.is_low_stock() else '' }}">
+      <td><span class="rm-code">{{ ing.code or '—' }}</span></td>
+      <td>
+        <a href="{{ url_for('main.ingredient_edit', ingredient_id=ing.id) }}" class="text-body text-decoration-none" title="Modifier nom / code / prix">
+          {{ ing.name }} <i class="bi bi-pencil small text-muted"></i>
+        </a>
+      </td>
+      <td>{{ ing.category or '—' }}</td>
+      <td>
+        {{ ing.stock_quantity }} {{ ing.unit }}
+        {% if ing.is_low_stock() %}
+        <span class="badge text-bg-danger ms-1"><i class="bi bi-exclamation-triangle"></i> Bas</span>
+        {% endif %}
+      </td>
+      <td>{{ ing.alert_threshold }} {{ ing.unit }}</td>
+      <td>{{ "%.0f"|format(ing.unit_price) }} Ar</td>
+      <td>
+        <form method="POST" action="{{ url_for('main.stock_adjust', ingredient_id=ing.id) }}" class="d-flex gap-1">
+          <input type="text" inputmode="decimal" name="new_quantity" class="form-control form-control-sm" style="width:95px" placeholder="Nouvelle valeur">
+          <input type="text" name="reason" class="form-control form-control-sm" style="width:140px" placeholder="Motif (ex: casse, inventaire)">
+          <button type="submit" class="btn btn-sm btn-outline-secondary">Modifier</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7" class="text-muted">Aucun ingrédient enregistré pour le moment.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

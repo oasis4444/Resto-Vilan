@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Ajouter une dépense{% endblock %}
+{% block page_title %}Ajouter une dépense {{ 'fixe' if expense_type == 'fixe' else 'variable' }}{% endblock %}
+{% block page_subtitle %}{{ 'Loyer, salaires... (paiement ponctuel)' if expense_type == 'fixe' else 'Huile, cure-dents, gaz, imprévus... (hors achat d\'ingrédient)' }}{% endblock %}
+{% block content %}
+
+<form method="POST" class="card shadow-sm p-4" style="max-width:600px">
+  <div class="mb-3">
+    <label class="form-label">Type de dépense</label>
+    <div class="btn-group w-100" role="group">
+      <a href="{{ url_for('expenses.expense_add', type='variable') }}" class="btn {{ 'btn-warning' if expense_type == 'variable' else 'btn-outline-secondary' }}">
+        <i class="bi bi-shuffle"></i> Variable
+      </a>
+      <a href="{{ url_for('expenses.expense_add', type='fixe') }}" class="btn {{ 'btn-primary' if expense_type == 'fixe' else 'btn-outline-secondary' }}">
+        <i class="bi bi-house-lock"></i> Fixe
+      </a>
+    </div>
+    <input type="hidden" name="type" value="{{ expense_type }}">
+    {% if expense_type == 'fixe' %}
+    <div class="form-text">Astuce : pour le loyer ou les salaires de chaque mois, utilisez plutôt le bouton « Payer » dans la colonne Dépenses fixes.</div>
+    {% endif %}
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Catégorie</label>
+    <input type="text" name="category" class="form-control" list="categoryOptions"
+           placeholder="{{ 'Ex : Loyer, Salaires...' if expense_type == 'fixe' else 'Ex : Huile, Cure-dents, Imprévu...' }}" required>
+    <datalist id="categoryOptions">
+      {% for cat in categories %}
+      <option value="{{ cat }}">
+      {% endfor %}
+    </datalist>
+    <div class="form-text">Choisissez une suggestion ou écrivez n'importe quelle catégorie.</div>
+  </div>
+  <div class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label">Montant (Ar)</label>
+      <input type="text" inputmode="decimal" name="amount" class="form-control" placeholder="Ex : 8500" required>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Date</label>
+      <input type="date" name="date" class="form-control" value="{{ today_str }}">
+    </div>
+  </div>
+  <div class="mb-3 mt-3">
+    <label class="form-label">Description (optionnel)</label>
+    <input type="text" name="description" class="form-control" placeholder="Ex : 2 bidons de 5 L, marché Anosibe...">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Source de financement</label>
+    <select name="funding_source_id" class="form-select">
+      <option value="">— Aucune —</option>
+      {% for src in funding_sources %}
+      <option value="{{ src.id }}">{{ src.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <button type="submit" class="btn btn-primary">Enregistrer</button>
+    <a href="{{ url_for('expenses.expenses_list') }}" class="btn btn-link">Retour</a>
+  </div>
+</form>
+{% endblock %}
